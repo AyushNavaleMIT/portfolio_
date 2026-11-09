@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campus Compass – Timetable &amp; Navigation</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f0f4ff;--bg2:#ffffff;--bg3:#f7f9ff;--bg4:#eef2ff;
+  --border:rgba(99,102,241,0.1);--border2:rgba(99,102,241,0.18);--border3:rgba(99,102,241,0.3);
+  --text:#1e1b4b;--muted:#6b7280;--dim:#c7d2fe;
+  --accent:#6366f1;--accent2:#8b5cf6;
+  --path:#f97316;--path2:#fb923c;
+  --node:#6366f1;--nodesel:#10b981;
+  --success:#10b981;--warn:#f59e0b;
+  --a:#3b82f6;--d:#8b5cf6;--h:#f97316;--e:#10b981;--des:#f43f5e;
+  --cs:#3b82f6;--it:#10b981;--me:#f97316;--ch:#f43f5e;--cv:#8b5cf6;--ds:#ec4899;--se:#06b6d4;--al:#eab308;--et:#6366f1;
+}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+
+/* TOPBAR */
+.topbar{
+  height:54px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;background:var(--bg2);
+  box-shadow:0 2px 20px rgba(99,102,241,0.12);
+  flex-shrink:0;z-index:100;position:relative;
+}
+.topbar::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,#3b82f6,#6366f1,#8b5cf6,#ec4899,#f97316);
+}
+.logo{display:flex;align-items:center;gap:9px;}
+.logo-mark{
+  width:34px;height:34px;border-radius:10px;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:12px;color:#fff;
+  box-shadow:0 4px 14px rgba(99,102,241,0.45);letter-spacing:0.02em;flex-shrink:0;
+}
+.logo-name{
+  font-family:'Syne',sans-serif;font-weight:800;font-size:16px;letter-spacing:0.04em;
+  background:linear-gradient(90deg,#6366f1,#8b5cf6);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.logo-sub{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;}
+.topbar-center{display:flex;align-items:center;gap:8px;}
+.live-badge{
+  display:flex;align-items:center;gap:5px;background:rgba(16,185,129,0.12);
+  border:1.5px solid rgba(16,185,129,0.35);border-radius:20px;padding:3px 9px;
+  font-size:10px;color:#059669;font-family:'JetBrains Mono';font-weight:700;
+}
+.live-dot{width:6px;height:6px;background:#10b981;border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.3;transform:scale(0.6);}}
+.slot-label{font-family:'JetBrains Mono';font-size:10px;color:var(--muted);font-weight:600;}
+.slot-select{
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  background:var(--bg4);border:2px solid var(--border2);color:var(--text);
+  border-radius:9px;padding:4px 10px;cursor:pointer;outline:none;transition:border-color 0.2s;
+}
+.slot-select:focus{border-color:var(--accent);}
+.algo-badge{
+  display:flex;align-items:center;gap:5px;background:rgba(99,102,241,0.1);
+  border:1.5px solid rgba(99,102,241,0.3);border-radius:20px;padding:3px 10px;
+  font-size:10px;color:#6366f1;font-family:'JetBrains Mono';font-weight:700;cursor:pointer;
+  transition:all 0.2s;
+}
+.algo-badge:hover{background:rgba(99,102,241,0.18);}
+.algo-badge.active-astar{background:rgba(99,102,241,0.18);border-color:#6366f1;}
+.algo-badge.active-dijkstra{background:rgba(16,185,129,0.15);border-color:#10b981;color:#059669;}
+.map-legend{display:flex;gap:12px;align-items:center;}
+.leg-i{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);font-weight:600;}
+.leg-d{width:9px;height:9px;border-radius:2px;}
+
+/* TAB BAR — switches between timetable & navigation modes */
+.tab-bar{
+  flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;height:42px;gap:4px;
+  box-shadow:0 1px 8px rgba(99,102,241,0.06);
+}
+.tab-btn{
+  font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.04em;
+  padding:5px 18px;border-radius:20px;border:2px solid transparent;
+  cursor:pointer;background:none;color:var(--muted);transition:all 0.18s;white-space:nowrap;
+  display:flex;align-items:center;gap:6px;
+}
+.tab-btn:hover{color:var(--accent);background:rgba(99,102,241,0.07);}
+.tab-btn.active{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;box-shadow:0 3px 12px rgba(99,102,241,0.35);}
+.tab-sep{width:1px;height:22px;background:var(--border2);margin:0 4px;}
+/* mode-specific controls in tab bar */
+.tab-controls{margin-left:auto;display:flex;align-items:center;gap:8px;}
+
+/* DAY TABS */
+.day-bar{
+  flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;height:42px;gap:3px;overflow-x:auto;
+}
+.day-bar::-webkit-scrollbar{display:none;}
+.day-pill{
+  font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.04em;
+  padding:4px 14px;border-radius:20px;border:2px solid transparent;
+  cursor:pointer;background:none;color:var(--muted);transition:all 0.18s;white-space:nowrap;
+}
+.day-pill:hover{color:var(--accent);background:rgba(99,102,241,0.07);}
+.day-pill.active{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;box-shadow:0 3px 12px rgba(99,102,241,0.35);}
+.day-sep{width:1px;height:22px;background:var(--border2);margin:0 6px;}
+
+/* DIVISION BAR */
+.mydiv-bar{
+  flex-shrink:0;background:linear-gradient(90deg,#f0f4ff,#f7f0ff);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;height:40px;gap:0;overflow-x:auto;
+}
+.mydiv-bar::-webkit-scrollbar{display:none;}
+.mydiv-label{font-family:'JetBrains Mono';font-size:9px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-right:10px;white-space:nowrap;font-weight:700;}
+.div-pills{display:flex;gap:4px;align-items:center;flex-wrap:nowrap;}
+.dpill{
+  font-family:'JetBrains Mono';font-size:10px;font-weight:700;
+  padding:3px 9px;border-radius:20px;border:2px solid rgba(99,102,241,0.18);
+  cursor:pointer;background:#fff;color:var(--muted);transition:all 0.18s;white-space:nowrap;
+}
+.dpill:hover{border-color:var(--accent);color:var(--accent);}
+.dpill.sel-all{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 2px 8px rgba(99,102,241,0.3);}
+.dpill.sel-cs{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;}
+.dpill.sel-it{background:#d1fae5;color:#065f46;border-color:#6ee7b7;}
+.dpill.sel-me{background:#ffedd5;color:#c2410c;border-color:#fed7aa;}
+.dpill.sel-ch{background:#ffe4e6;color:#be123c;border-color:#fda4af;}
+.dpill.sel-cv{background:#ede9fe;color:#6d28d9;border-color:#c4b5fd;}
+.dpill.sel-ds{background:#fce7f3;color:#9d174d;border-color:#f9a8d4;}
+.dpill.sel-se{background:#cffafe;color:#164e63;border-color:#67e8f9;}
+.dpill.sel-al{background:#fef3c7;color:#92400e;border-color:#fcd34d;}
+.dpill.sel-et{background:#e0e7ff;color:#3730a3;border-color:#a5b4fc;}
+.dv-sep{width:1px;height:20px;background:var(--border2);margin:0 6px;flex-shrink:0;}
+.saved-info{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-family:'JetBrains Mono';white-space:nowrap;}
+.saved-chip{background:var(--accent);border-radius:10px;padding:2px 8px;font-size:9px;color:#fff;font-weight:700;}
+
+/* MAIN LAYOUT */
+.main{display:flex;flex:1;overflow:hidden;min-height:0;}
+.map-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.map-toolbar{
+  display:flex;align-items:center;gap:7px;padding:8px 14px;
+  border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2);flex-wrap:wrap;
+}
+.tbtn{
+  font-family:'Syne',sans-serif;font-size:11px;font-weight:700;
+  padding:5px 12px;border-radius:9px;border:2px solid var(--border2);
+  background:#fff;color:var(--muted);cursor:pointer;transition:all 0.15s;
+}
+.tbtn:hover{border-color:var(--accent);color:var(--accent);}
+.tbtn.on{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 3px 10px rgba(99,102,241,0.3);}
+.tbtn.danger{border-color:rgba(239,68,68,0.3);color:#ef4444;}
+.tbtn.danger:hover{background:#ef4444;color:#fff;border-color:#ef4444;}
+.map-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:12px;position:relative;background:radial-gradient(ellipse at 50% 30%,rgba(99,102,241,0.05) 0%,transparent 70%);}
+svg.cmap{width:100%;height:100%;max-width:880px;max-height:570px;}
+svg.cmap.nav-mode{cursor:crosshair;}
+
+/* building interactivity */
+.bldg{cursor:pointer;}
+.bldg .bg{transition:filter 0.18s,opacity 0.18s;}
+.bldg .glow{transition:opacity 0.18s;opacity:0;}
+.bldg:hover .bg{filter:brightness(1.08) saturate(1.2);}
+.bldg:hover .glow{opacity:1;}
+.bldg.sel .bg{filter:brightness(1.12) saturate(1.3);}
+.bldg.sel .glow{opacity:1;}
+.bldg.dim .bg{filter:brightness(0.55) saturate(0.3);opacity:0.6;}
+
+/* SIDEBAR */
+.sidebar{width:340px;flex-shrink:0;background:var(--bg2);border-left:2px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;box-shadow:-4px 0 20px rgba(99,102,241,0.06);}
+.sb-head{padding:12px 14px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg3);}
+.sb-head h2{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;margin-bottom:6px;color:var(--text);}
+.sb-head p{font-size:10px;color:var(--muted);font-weight:500;}
+.srch{display:flex;align-items:center;gap:6px;background:#fff;border:2px solid var(--border2);border-radius:9px;padding:6px 10px;transition:border-color 0.2s;}
+.srch:focus-within{border-color:var(--accent);}
+.srch input{background:none;border:none;outline:none;color:var(--text);font-size:11px;width:100%;font-family:'Plus Jakarta Sans';}
+.srch input::placeholder{color:var(--muted);}
+.srch-ico{color:var(--accent);font-size:14px;}
+.stats-row{display:flex;gap:7px;padding:8px 12px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--bg3);}
+.stat-box{flex:1;background:#fff;border:2px solid var(--border);border-radius:9px;padding:7px;text-align:center;}
+.stat-num{font-family:'JetBrains Mono';font-size:17px;font-weight:700;}
+.stat-lbl{font-size:8px;color:var(--muted);margin-top:1px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;}
+.sess-list{flex:1;overflow-y:auto;padding:9px;}
+.sess-list::-webkit-scrollbar{width:4px;}
+.sess-list::-webkit-scrollbar-thumb{background:var(--dim);border-radius:4px;}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;color:var(--muted);text-align:center;gap:8px;}
+.empty-ico{font-size:36px;opacity:0.5;}
+.empty-txt{font-size:12px;line-height:1.7;font-weight:500;}
+
+/* SESSION CARDS */
+.sess-card{background:#fff;border:2px solid var(--border);border-radius:11px;padding:10px 12px;margin-bottom:7px;cursor:default;transition:all 0.15s;animation:sIn 0.22s ease both;border-left:4px solid transparent;box-shadow:0 2px 8px rgba(99,102,241,0.04);}
+.sess-card:hover{border-color:var(--border3);transform:translateX(2px);box-shadow:0 4px 16px rgba(99,102,241,0.1);}
+@keyframes sIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.s-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.s-sub{font-family:'Syne',sans-serif;font-weight:800;font-size:12px;color:var(--text);}
+.s-room{font-family:'JetBrains Mono';font-size:10px;font-weight:700;background:var(--bg4);border:1.5px solid var(--border2);border-radius:5px;padding:2px 7px;color:var(--accent);}
+.s-meta{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:10px;color:var(--muted);font-weight:600;}
+.badge{font-size:9px;font-weight:700;letter-spacing:0.04em;padding:2px 7px;border-radius:9px;font-family:'JetBrains Mono';}
+.b-cs{background:#dbeafe;color:#1d4ed8;}
+.b-it{background:#d1fae5;color:#065f46;}
+.b-me{background:#ffedd5;color:#c2410c;}
+.b-ch{background:#ffe4e6;color:#be123c;}
+.b-cv{background:#ede9fe;color:#6d28d9;}
+.b-ds{background:#fce7f3;color:#9d174d;}
+.b-se{background:#cffafe;color:#164e63;}
+.b-al{background:#fef3c7;color:#92400e;}
+.b-et{background:#e0e7ff;color:#3730a3;}
+.b-lab{background:#f3e8ff;color:#7c3aed;}
+.b-thy{background:#f1f5f9;color:#64748b;}
+.sec-lbl{font-family:'JetBrains Mono';font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);padding:7px 4px 3px;font-weight:700;}
+
+/* NAV SIDEBAR */
+.nav-form{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;background:#fff;display:flex;flex-direction:column;gap:9px;}
+.nav-row{display:flex;flex-direction:column;gap:3px;}
+.nav-label{font-family:'JetBrains Mono';font-size:9px;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;display:flex;align-items:center;gap:5px;}
+.nav-label .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.dot-from{background:#10b981;}
+.dot-to{background:#f97316;}
+.nav-select{
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;
+  background:var(--bg4);border:2px solid var(--border2);color:var(--text);
+  border-radius:9px;padding:7px 11px;cursor:pointer;outline:none;transition:border-color 0.2s;width:100%;
+}
+.nav-select:focus{border-color:var(--accent);}
+.nav-btns{display:flex;gap:7px;}
+.nav-btn{
+  flex:1;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;
+  padding:8px 12px;border-radius:9px;border:none;cursor:pointer;transition:all 0.18s;
+}
+.nav-btn.primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;box-shadow:0 4px 14px rgba(99,102,241,0.35);}
+.nav-btn.primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,0.45);}
+.nav-btn.secondary{background:var(--bg4);border:2px solid var(--border2);color:var(--muted);}
+.nav-btn.secondary:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ALGO PANEL */
+.algo-info{padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;gap:7px;}
+.algo-toggle{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:9px 7px;border-radius:9px;border:2px solid var(--border2);
+  cursor:pointer;transition:all 0.18s;background:#fff;
+}
+.algo-toggle:hover{border-color:var(--accent);}
+.algo-toggle.active-astar{border-color:#6366f1;background:rgba(99,102,241,0.06);}
+.algo-toggle.active-dijkstra{border-color:#10b981;background:rgba(16,185,129,0.06);}
+.algo-name{font-family:'Syne',sans-serif;font-size:11px;font-weight:800;color:var(--text);}
+.algo-desc{font-size:9px;color:var(--muted);text-align:center;font-weight:500;}
+.algo-tag{font-family:'JetBrains Mono';font-size:8px;font-weight:700;padding:2px 6px;border-radius:7px;margin-top:2px;}
+.astar-tag{background:rgba(99,102,241,0.12);color:#6366f1;}
+.dijk-tag{background:rgba(16,185,129,0.12);color:#059669;}
+
+/* RESULT PANEL */
+.result-panel{flex:1;overflow-y:auto;padding:11px 14px;display:flex;flex-direction:column;gap:9px;}
+.result-panel::-webkit-scrollbar{width:4px;}
+.result-panel::-webkit-scrollbar-thumb{background:var(--dim);border-radius:4px;}
+.empty-nav{display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;color:var(--muted);text-align:center;gap:9px;}
+
+/* PATH RESULT */
+.path-header{background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.1));border:2px solid rgba(99,102,241,0.2);border-radius:13px;padding:11px 13px;}
+.path-title{font-family:'Syne',sans-serif;font-weight:800;font-size:13px;margin-bottom:7px;color:var(--text);}
+.path-stats{display:flex;gap:7px;}
+.ps{flex:1;background:#fff;border-radius:9px;padding:7px;text-align:center;border:1.5px solid var(--border);}
+.ps-val{font-family:'JetBrains Mono';font-size:16px;font-weight:700;}
+.ps-lbl{font-size:8px;color:var(--muted);font-weight:600;letter-spacing:0.06em;text-transform:uppercase;margin-top:1px;}
+.path-steps{display:flex;flex-direction:column;gap:0;}
+.step-item{display:flex;align-items:stretch;gap:10px;padding:5px 0;}
+.step-line{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0;}
+.step-dot{width:13px;height:13px;border-radius:50%;border:2px solid #fff;flex-shrink:0;box-shadow:0 0 0 2px rgba(99,102,241,0.3);}
+.step-connector{width:2px;flex:1;min-height:8px;background:linear-gradient(to bottom,rgba(99,102,241,0.3),rgba(99,102,241,0.1));}
+.step-content{padding:2px 0 7px;}
+.step-name{font-family:'Syne',sans-serif;font-weight:800;font-size:12px;color:var(--text);}
+.step-meta{font-size:10px;color:var(--muted);font-weight:500;margin-top:1px;}
+.step-dist{font-family:'JetBrains Mono';font-size:9px;color:var(--accent);font-weight:700;margin-top:2px;}
+.turn-dir{display:inline-block;background:rgba(99,102,241,0.1);color:#6366f1;font-size:9px;font-weight:700;font-family:'JetBrains Mono';padding:2px 7px;border-radius:5px;margin-top:2px;}
+
+/* ALGO TRACE */
+.algo-trace{background:var(--bg3);border:1.5px solid var(--border2);border-radius:11px;padding:11px;}
+.trace-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:800;margin-bottom:7px;color:var(--text);display:flex;align-items:center;gap:5px;}
+.trace-body{font-family:'JetBrains Mono';font-size:9px;color:var(--muted);line-height:1.8;max-height:120px;overflow-y:auto;}
+.trace-body::-webkit-scrollbar{width:3px;}
+.trace-body::-webkit-scrollbar-thumb{background:var(--dim);}
+.trace-line{padding:1px 0;}
+.trace-line.highlight{color:var(--accent);font-weight:700;}
+.trace-line.final{color:var(--success);font-weight:700;}
+
+/* tooltip */
+.maptip{
+  position:absolute;background:#fff;border:2px solid var(--border3);
+  border-radius:11px;padding:10px 13px;pointer-events:none;z-index:200;min-width:155px;
+  box-shadow:0 12px 40px rgba(99,102,241,0.18);display:none;
+  animation:tipIn 0.15s ease;
+}
+@keyframes tipIn{from{opacity:0;transform:scale(0.93)}to{opacity:1;transform:scale(1)}}
+.tt-title{font-family:'Syne',sans-serif;font-weight:800;font-size:12px;margin-bottom:2px;}
+.tt-sub{font-size:10px;color:var(--muted);font-weight:600;}
+.tt-cnt{font-family:'JetBrains Mono';font-size:10px;font-weight:700;margin-top:5px;padding-top:5px;border-top:1px solid var(--border);}
+
+/* PATH SVG ANIMATIONS */
+@keyframes dashAnim{to{stroke-dashoffset:0;}}
+@keyframes nodePop{0%{r:4;opacity:0;}50%{r:9;opacity:1;}100%{r:7;}}
+.path-edge{stroke-dashoffset:300;animation:dashAnim 0.6s ease forwards;}
+.path-node{animation:nodePop 0.5s ease forwards;}
+
+/* Mode instruction */
+.mode-hint{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  background:rgba(99,102,241,0.92);color:#fff;border-radius:20px;padding:5px 14px;
+  font-size:10px;font-family:'JetBrains Mono';font-weight:700;pointer-events:none;
+  opacity:0;transition:opacity 0.3s;white-space:nowrap;
+}
+.mode-hint.show{opacity:1;}
+
+/* PANELS — shown/hidden based on active tab */
+.panel{display:none;flex:1;overflow:hidden;flex-direction:column;}
+.panel.active{display:flex;}
+.nav-sidebar-panel{display:none;flex:1;overflow:hidden;flex-direction:column;}
+.nav-sidebar-panel.active{display:flex;}
+
+@media(max-width:700px){
+  .main{flex-direction:column;}
+  .sidebar{width:100%;max-height:300px;border-left:none;border-top:2px solid var(--border2);}
+  .map-legend{display:none;}
+}
+.home-btn {
+  margin-left: 12px;
+
+  font-family: 'Syne', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 18px;
+  text-decoration: none;
+
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+
+  box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+  transition: all 0.2s ease;
+}
+
+.home-btn:hover {
+  transform: translateY(-1px);
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════ TOPBAR ══ -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark">CC</div>
+    <div>
+      <div class="logo-name">CAMPUS COMPASS</div>
+      <div class="logo-sub">MIT AOE · Smart Campus System</div>
+    </div>
+  </div>
+  <div class="topbar-center">
+    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <span class="slot-label">SLOT</span>
+    <select class="slot-select" id="slotSel"></select>
+    <div class="algo-badge active-astar" id="topAlgoBadge" style="display:none">⚡ A* ACTIVE</div>
+  </div>
+  <div class="map-legend">
+    <div class="leg-i"><div class="leg-d" style="background:#3b82f6"></div>A Wing</div>
+    <div class="leg-i"><div class="leg-d" style="background:#8b5cf6"></div>D Block</div>
+    <div class="leg-i"><div class="leg-d" style="background:#f97316"></div>H Wing</div>
+    <div class="leg-i"><div class="leg-d" style="background:#10b981"></div>E Wing</div>
+    <div class="leg-i"><div class="leg-d" style="background:#f97316;border-radius:0"></div>Route</div>
+  </div>
+  <a href="../../index.html#projects" class="home-btn">← Portfolio</a>
+</div>
+
+<!-- ═══════════════════════════════════════════════ TAB BAR ══ -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tabTT" onclick="switchTab('timetable')">📅 Timetable</button>
+  <div class="tab-sep"></div>
+  <button class="tab-btn" id="tabNav" onclick="switchTab('navigation')">🧭 Navigation</button>
+</div>
+
+<!-- ═══════════════════════════════════ TIMETABLE CONTROLS ══ -->
+<div id="ttControls">
+  <!-- DAY TABS -->
+  <div class="day-bar">
+    <button class="day-pill active" data-day="MON" onclick="setDay(this)">MON</button>
+    <button class="day-pill" data-day="TUE" onclick="setDay(this)">TUE</button>
+    <button class="day-pill" data-day="WED" onclick="setDay(this)">WED</button>
+    <button class="day-pill" data-day="THU" onclick="setDay(this)">THU</button>
+    <button class="day-pill" data-day="FRI" onclick="setDay(this)">FRI</button>
+    <button class="day-pill" data-day="SAT" onclick="setDay(this)">SAT</button>
+  </div>
+  <!-- DIVISION BAR -->
+  <div class="mydiv-bar">
+    <span class="mydiv-label">Division:</span>
+    <div class="div-pills">
+      <button class="dpill sel-all" data-d="ALL" onclick="setDiv(this)">All</button>
+      <div class="dv-sep"></div>
+      <button class="dpill" data-d="CS1" onclick="setDiv(this)" data-cat="cs">CS–1</button>
+      <button class="dpill" data-d="CS2" onclick="setDiv(this)" data-cat="cs">CS–2</button>
+      <button class="dpill" data-d="CS3" onclick="setDiv(this)" data-cat="cs">CS–3</button>
+      <button class="dpill" data-d="CS4" onclick="setDiv(this)" data-cat="cs">CS–4</button>
+      <div class="dv-sep"></div>
+      <button class="dpill" data-d="DS1" onclick="setDiv(this)" data-cat="ds">DS–1</button>
+      <button class="dpill" data-d="DS2" onclick="setDiv(this)" data-cat="ds">DS–2</button>
+      <div class="dv-sep"></div>
+      <button class="dpill" data-d="IT1" onclick="setDiv(this)" data-cat="it">IT–1</button>
+      <button class="dpill" data-d="IT2" onclick="setDiv(this)" data-cat="it">IT–2</button>
+      <div class="dv-sep"></div>
+      <button class="dpill" data-d="AL1" onclick="setDiv(this)" data-cat="al">AL–1</button>
+      <button class="dpill" data-d="AL2" onclick="setDiv(this)" data-cat="al">AL–2</button>
+      <div class="dv-sep"></div>
+      <button class="dpill" data-d="SE1" onclick="setDiv(this)" data-cat="se">SE–1</button>
+      <button class="dpill" data-d="SE2" onclick="setDiv(this)" data-cat="se">SE–2</button>
+      <div class="dv-sep"></div>
+      <button class="dpill" data-d="ET1" onclick="setDiv(this)" data-cat="et">ET–1</button>
+      <button class="dpill" data-d="ET2" onclick="setDiv(this)" data-cat="et">ET–2</button>
+      <div class="dv-sep"></div>
+      <button class="dpill" data-d="ME1" onclick="setDiv(this)" data-cat="me">ME–1</button>
+      <button class="dpill" data-d="ME2" onclick="setDiv(this)" data-cat="me">ME–2</button>
+      <div class="dv-sep"></div>
+      <button class="dpill" data-d="CV" onclick="setDiv(this)" data-cat="cv">CV</button>
+      <button class="dpill" data-d="CH" onclick="setDiv(this)" data-cat="ch">CH</button>
+    </div>
+    <div class="saved-info" id="savedInfo" style="display:none">My class: <span class="saved-chip" id="savedChip"></span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ MAIN ══ -->
+<div class="main">
+  <!-- MAP AREA -->
+  <div class="map-area">
+
+    <!-- TIMETABLE MAP TOOLBAR -->
+    <div class="map-toolbar" id="ttToolbar">
+      <button class="tbtn on" id="btnMap" onclick="setView('map')">🗺 Campus Map</button>
+      <button class="tbtn" id="btnAll" onclick="setView('all')">📋 All Rooms</button>
+      <button class="tbtn" id="btnFacTT" onclick="toggleFacTT()">🏢 Facilities</button>
+    </div>
+
+    <!-- NAV MAP TOOLBAR -->
+    <div class="map-toolbar" id="navToolbar" style="display:none">
+      <button class="tbtn on" id="btnNavMode" onclick="setMode('navigate')">🧭 Navigate</button>
+      <button class="tbtn" id="btnExplore" onclick="setMode('explore')">🗺 Explore</button>
+      <button class="tbtn" id="btnFacNav" onclick="toggleFacNav()">🏢 Facilities</button>
+      <button class="tbtn danger" onclick="clearPath()">✕ Clear Route</button>
+    </div>
+
+    <!-- MAP WRAP — shared SVG, different click handlers per mode -->
+    <div class="map-wrap" id="mapWrap">
+<svg class="cmap" viewBox="0 0 880 580" xmlns="http://www.w3.org/2000/svg" id="campusSVG">
+<defs>
+  <pattern id="pg" width="24" height="24" patternUnits="userSpaceOnUse">
+    <path d="M24 0L0 0 0 24" fill="none" stroke="rgba(99,102,241,0.06)" stroke-width="1"/>
+  </pattern>
+  <filter id="gA"><feGaussianBlur stdDeviation="8"/></filter>
+  <filter id="gB"><feGaussianBlur stdDeviation="10"/></filter>
+  <linearGradient id="gA1" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#dbeafe"/><stop offset="100%" stop-color="#bfdbfe"/>
+  </linearGradient>
+  <linearGradient id="gD1" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#ede9fe"/><stop offset="100%" stop-color="#ddd6fe"/>
+  </linearGradient>
+  <linearGradient id="gH1" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#ffedd5"/><stop offset="100%" stop-color="#fed7aa"/>
+  </linearGradient>
+  <linearGradient id="gE1" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#d1fae5"/><stop offset="100%" stop-color="#a7f3d0"/>
+  </linearGradient>
+  <linearGradient id="gDes1" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#ffe4e6"/><stop offset="100%" stop-color="#fecdd3"/>
+  </linearGradient>
+  <clipPath id="cc"><polygon points="90,14 820,14 840,566 60,566"/></clipPath>
+  <marker id="arrowPath" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#f97316" opacity="0.9"/>
+  </marker>
+</defs>
+
+<!-- campus ground -->
+<rect width="880" height="580" fill="#f8f9ff"/>
+<rect width="880" height="580" fill="url(#pg)"/>
+<!-- campus boundary -->
+<polygon points="90,14 820,14 840,566 60,566" fill="rgba(240,244,255,0.7)" stroke="#c7d2fe" stroke-width="2" stroke-dasharray="10,6"/>
+<text x="487" y="570" font-size="9" fill="#94a3b8" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" letter-spacing="0.12em">CAMPUS ROAD / MAIN ENTRANCE</text>
+
+<!-- ══ H-WING ══ -->
+<g class="bldg" id="bH" onclick="onBldgClick('H')" onmouseenter="tip(event,'H')" onmouseleave="untip()">
+  <rect class="glow" x="130" y="26" width="570" height="94" rx="12" fill="rgba(249,115,22,0.25)" filter="url(#gA)"/>
+  <rect class="bg" x="133" y="28" width="565" height="90" rx="10" fill="url(#gH1)" stroke="#f97316" stroke-width="2.5"/>
+  <rect x="133" y="28" width="565" height="28" rx="10" fill="rgba(249,115,22,0.75)"/>
+  <rect x="133" y="49" width="565" height="7" fill="rgba(249,115,22,0.75)"/>
+  <rect x="148" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="186" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="224" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="262" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="300" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="338" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="376" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="414" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="452" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="490" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="528" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="566" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="604" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="642" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <rect x="666" y="68" width="30" height="18" rx="3" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.45)" stroke-width="1.2"/>
+  <text x="415" y="44" font-size="15" font-weight="700" fill="#fff" text-anchor="middle" font-family="Syne">H – WING</text>
+  <text x="415" y="57" font-size="8.5" fill="rgba(255,255,255,0.7)" text-anchor="middle" font-family="Plus Jakarta Sans" font-weight="600">H001–H311 · Labs &amp; Lecture Halls · North Stretch</text>
+  <text class="cntlbl" x="415" y="108" font-size="11" fill="#ea580c" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" id="cH"></text>
+</g>
+
+<!-- ══ A-WING ══ -->
+<g class="bldg" id="bA" onclick="onBldgClick('A')" onmouseenter="tip(event,'A')" onmouseleave="untip()">
+  <rect class="glow" x="348" y="145" width="266" height="222" rx="14" fill="rgba(59,130,246,0.2)" filter="url(#gA)"/>
+  <rect class="bg" x="352" y="148" width="260" height="218" rx="12" fill="url(#gA1)" stroke="#3b82f6" stroke-width="2.5"/>
+  <rect x="352" y="148" width="260" height="32" rx="12" fill="rgba(59,130,246,0.8)"/>
+  <rect x="352" y="172" width="260" height="8" fill="rgba(59,130,246,0.8)"/>
+  <rect x="368" y="196" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="408" y="196" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="448" y="196" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="488" y="196" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="528" y="196" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="368" y="226" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="408" y="226" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="448" y="226" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="488" y="226" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="528" y="226" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="368" y="256" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="408" y="256" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="448" y="256" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="488" y="256" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="528" y="256" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="368" y="286" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="408" y="286" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="448" y="286" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="488" y="286" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="528" y="286" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="368" y="316" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="408" y="316" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="448" y="316" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="488" y="316" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <rect x="528" y="316" width="32" height="20" rx="3" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1.2"/>
+  <text x="482" y="168" font-size="16" font-weight="700" fill="#fff" text-anchor="middle" font-family="Syne">A – WING</text>
+  <text x="482" y="182" font-size="8" fill="rgba(255,255,255,0.7)" text-anchor="middle" font-family="Plus Jakarta Sans" font-weight="600">A001–A210 · Central · G+2 Floors</text>
+  <text class="cntlbl" x="482" y="358" font-size="11" fill="#1d4ed8" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" id="cA"></text>
+</g>
+
+<!-- ══ D-BLOCK ══ -->
+<g class="bldg" id="bD" onclick="onBldgClick('D')" onmouseenter="tip(event,'D')" onmouseleave="untip()">
+  <rect class="glow" x="716" y="32" width="128" height="348" rx="14" fill="rgba(139,92,246,0.25)" filter="url(#gA)"/>
+  <rect class="bg" x="720" y="36" width="122" height="342" rx="11" fill="url(#gD1)" stroke="#8b5cf6" stroke-width="2.5"/>
+  <rect x="720" y="36" width="122" height="30" rx="11" fill="rgba(139,92,246,0.8)"/>
+  <rect x="720" y="58" width="122" height="8" fill="rgba(139,92,246,0.8)"/>
+  <rect x="732" y="80" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="762" y="80" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="792" y="80" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="732" y="106" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="762" y="106" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="792" y="106" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="732" y="132" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="762" y="132" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="792" y="132" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="732" y="158" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="762" y="158" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="792" y="158" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="732" y="184" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="762" y="184" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="792" y="184" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="732" y="210" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="762" y="210" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="792" y="210" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="732" y="236" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="762" y="236" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="792" y="236" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="732" y="262" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="762" y="262" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="792" y="262" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="732" y="292" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="762" y="292" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="792" y="292" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="732" y="318" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="762" y="318" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <rect x="792" y="318" width="24" height="16" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.4)" stroke-width="1.2"/>
+  <text x="781" y="52" font-size="13" font-weight="700" fill="#fff" text-anchor="middle" font-family="Syne">D – BLOCK</text>
+  <text x="781" y="64" font-size="8" fill="rgba(255,255,255,0.65)" text-anchor="middle" font-family="Plus Jakarta Sans" font-weight="600">East · Road Side · D011–D310</text>
+  <text class="cntlbl" x="781" y="378" font-size="11" fill="#7c3aed" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" id="cD"></text>
+</g>
+
+<!-- ══ E-WING ══ -->
+<g class="bldg" id="bE" onclick="onBldgClick('E')" onmouseenter="tip(event,'E')" onmouseleave="untip()">
+  <rect class="glow" x="152" y="148" width="180" height="198" rx="12" fill="rgba(16,185,129,0.2)" filter="url(#gA)"/>
+  <rect class="bg" x="156" y="152" width="174" height="192" rx="10" fill="url(#gE1)" stroke="#10b981" stroke-width="2.5"/>
+  <rect x="156" y="152" width="174" height="28" rx="10" fill="rgba(16,185,129,0.75)"/>
+  <rect x="156" y="172" width="174" height="8" fill="rgba(16,185,129,0.75)"/>
+  <rect x="168" y="194" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="202" y="194" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="236" y="194" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="290" y="194" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="168" y="222" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="202" y="222" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="236" y="222" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="290" y="222" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="168" y="250" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="202" y="250" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="236" y="250" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="290" y="250" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="168" y="278" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="202" y="278" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="236" y="278" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="290" y="278" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="168" y="306" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="202" y="306" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="236" y="306" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <rect x="290" y="306" width="28" height="18" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.4)" stroke-width="1.2"/>
+  <text x="243" y="168" font-size="13" font-weight="700" fill="#fff" text-anchor="middle" font-family="Syne">E – WING</text>
+  <text x="243" y="180" font-size="7.5" fill="rgba(255,255,255,0.7)" text-anchor="middle" font-family="Plus Jakarta Sans" font-weight="600">E101–E311 · West Side · G+3</text>
+  <text class="cntlbl" x="243" y="340" font-size="11" fill="#059669" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" id="cE"></text>
+</g>
+
+<!-- ══ HBM BLOCK ══ -->
+<g class="bldg" id="bHBM" onclick="onBldgClick('HBM')" onmouseenter="tip(event,'HBM')" onmouseleave="untip()">
+  <rect class="glow" x="140" y="358" width="200" height="90" rx="10" fill="rgba(234,179,8,0.25)" filter="url(#gA)"/>
+  <rect class="bg" x="144" y="362" width="194" height="84" rx="9" fill="rgba(254,249,195,0.9)" stroke="#eab308" stroke-width="2.5"/>
+  <rect x="144" y="362" width="194" height="26" rx="9" fill="rgba(234,179,8,0.75)"/>
+  <rect x="144" y="381" width="194" height="7" fill="rgba(234,179,8,0.75)"/>
+  <rect x="157" y="400" width="25" height="16" rx="3" fill="rgba(234,179,8,0.15)" stroke="rgba(234,179,8,0.45)" stroke-width="1.2"/>
+  <rect x="190" y="400" width="25" height="16" rx="3" fill="rgba(234,179,8,0.15)" stroke="rgba(234,179,8,0.45)" stroke-width="1.2"/>
+  <rect x="223" y="400" width="25" height="16" rx="3" fill="rgba(234,179,8,0.15)" stroke="rgba(234,179,8,0.45)" stroke-width="1.2"/>
+  <rect x="256" y="400" width="25" height="16" rx="3" fill="rgba(234,179,8,0.15)" stroke="rgba(234,179,8,0.45)" stroke-width="1.2"/>
+  <rect x="289" y="400" width="25" height="16" rx="3" fill="rgba(234,179,8,0.15)" stroke="rgba(234,179,8,0.45)" stroke-width="1.2"/>
+  <text x="241" y="376" font-size="12" font-weight="700" fill="#fff" text-anchor="middle" font-family="Syne">HBM BLOCK</text>
+  <text x="241" y="432" font-size="9" fill="#a16207" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" id="cHBM"></text>
+</g>
+
+<!-- SPORTS GROUND -->
+<ellipse cx="111" cy="235" rx="64" ry="52" fill="rgba(16,185,129,0.07)" stroke="rgba(16,185,129,0.3)" stroke-width="2" stroke-dasharray="8,5"/>
+<text x="111" y="228" font-size="8" fill="rgba(16,185,129,0.7)" text-anchor="middle" font-family="Syne" font-weight="700">SPORTS</text>
+<text x="111" y="240" font-size="7" fill="rgba(16,185,129,0.6)" text-anchor="middle" font-family="Syne" font-weight="700">GROUND</text>
+
+<!-- CANTEEN -->
+<rect x="352" y="385" width="180" height="78" rx="9" fill="rgba(236,72,153,0.08)" stroke="rgba(236,72,153,0.35)" stroke-width="2" stroke-dasharray="8,5"/>
+<text x="442" y="420" font-size="9" fill="rgba(236,72,153,0.75)" text-anchor="middle" font-family="Syne" font-weight="700">CANTEEN / OPEN AREA</text>
+<text x="442" y="432" font-size="7.5" fill="rgba(236,72,153,0.6)" text-anchor="middle" font-family="Plus Jakarta Sans">Amphitheatre · Garden</text>
+
+<!-- PARKING -->
+<rect x="544" y="395" width="140" height="70" rx="9" fill="rgba(148,163,184,0.1)" stroke="rgba(148,163,184,0.4)" stroke-width="2" stroke-dasharray="8,5"/>
+<text x="614" y="427" font-size="9" fill="#64748b" text-anchor="middle" font-family="Syne" font-weight="700">PARKING</text>
+<text x="614" y="440" font-size="7" fill="#94a3b8" text-anchor="middle" font-family="Plus Jakarta Sans">2W + 4W</text>
+
+<!-- IC BLOCK -->
+<rect x="590" y="148" width="118" height="170" rx="9" fill="rgba(6,182,212,0.07)" stroke="rgba(6,182,212,0.35)" stroke-width="2"/>
+<text x="649" y="220" font-size="9" fill="rgba(6,182,212,0.8)" text-anchor="middle" font-family="Syne" font-weight="700">IC BLOCK</text>
+<text x="649" y="232" font-size="7.5" fill="rgba(6,182,212,0.65)" text-anchor="middle" font-family="Plus Jakarta Sans">IC1–IC3 · Innovation</text>
+
+<!-- MAIN ENTRANCE -->
+<g transform="translate(487,540)">
+  <rect x="-52" y="-12" width="104" height="24" rx="6" fill="rgba(99,102,241,0.1)" stroke="rgba(99,102,241,0.3)" stroke-width="1.5"/>
+  <text x="0" y="4" font-size="9" fill="#6366f1" text-anchor="middle" font-family="JetBrains Mono" font-weight="700">🚪 MAIN ENTRANCE</text>
+</g>
+
+<!-- FACILITIES LAYER -->
+<g id="facL" style="display:none">
+  <g transform="translate(540,104)"><rect x="-28" y="-11" width="56" height="22" rx="4" fill="#fff" stroke="#f97316" stroke-width="1.5"/><text x="0" y="4" font-size="8" fill="#f97316" text-anchor="middle" font-family="JetBrains Mono" font-weight="700">CANTEEN →</text></g>
+  <g transform="translate(780,400)"><rect x="-26" y="-11" width="52" height="22" rx="4" fill="#fff" stroke="#6366f1" stroke-width="1.5"/><text x="0" y="4" font-size="8" fill="#6366f1" text-anchor="middle" font-family="JetBrains Mono" font-weight="700">AUD / CRPC</text></g>
+  <g transform="translate(780,190)"><rect x="-26" y="-11" width="52" height="22" rx="4" fill="#fff" stroke="#f97316" stroke-width="1.5"/><text x="0" y="4" font-size="8" fill="#f97316" text-anchor="middle" font-family="JetBrains Mono" font-weight="700">PHY LAB</text></g>
+  <g transform="translate(780,140)"><rect x="-18" y="-11" width="36" height="22" rx="4" fill="#fff" stroke="#6366f1" stroke-width="1.5"/><text x="0" y="4" font-size="9" fill="#6366f1" text-anchor="middle" font-family="JetBrains Mono" font-weight="700">LIFT</text></g>
+  <g transform="translate(620,278)"><rect x="-18" y="-11" width="36" height="22" rx="4" fill="#fff" stroke="#6366f1" stroke-width="1.5"/><text x="0" y="4" font-size="9" fill="#6366f1" text-anchor="middle" font-family="JetBrains Mono" font-weight="700">LIFT</text></g>
+  <g transform="translate(380,130)"><rect x="-28" y="-11" width="56" height="22" rx="4" fill="#fff" stroke="#10b981" stroke-width="1.5"/><text x="0" y="4" font-size="8" fill="#10b981" text-anchor="middle" font-family="JetBrains Mono" font-weight="700">DEPT LAB</text></g>
+  <g transform="translate(230,130)"><rect x="-26" y="-11" width="52" height="22" rx="4" fill="#fff" stroke="#f97316" stroke-width="1.5"/><text x="0" y="4" font-size="8" fill="#f97316" text-anchor="middle" font-family="JetBrains Mono" font-weight="700">FACULTY</text></g>
+</g>
+
+<!-- NAV PATH LAYERS -->
+<g id="nodesLayer"></g>
+<g id="pathVisited"></g>
+<g id="pathLayer"></g>
+
+<!-- compass rose -->
+<g transform="translate(840,558)">
+  <circle r="18" fill="rgba(240,244,255,0.95)" stroke="#c7d2fe" stroke-width="1.5"/>
+  <polygon points="0,-13 -4,2 0,-2 4,2" fill="#6366f1"/>
+  <polygon points="0,13 -4,-2 0,2 4,-2" fill="#c7d2fe"/>
+  <text x="0" y="-16" font-size="7" fill="#6366f1" text-anchor="middle" font-family="JetBrains Mono" font-weight="700">N</text>
+</g>
+<!-- scale bar -->
+<g transform="translate(698,560)">
+  <line x1="0" y1="0" x2="60" y2="0" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="0" y1="-5" x2="0" y2="5" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="60" y1="-5" x2="60" y2="5" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="30" y="-8" font-size="8" fill="#94a3b8" text-anchor="middle" font-family="JetBrains Mono">~100m</text>
+</g>
+</svg>
+      <div class="maptip" id="maptip"></div>
+      <div class="mode-hint" id="modeHint">Click a building to set as FROM</div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- TIMETABLE SIDEBAR -->
+    <div id="ttSidebar" class="panel active">
+      <div class="sb-head">
+        <h2 id="sbTitle">Select a building or room</h2>
+        <div class="srch">
+          <span class="srch-ico">⌕</span>
+          <input type="text" id="srchInp" placeholder="Subject, teacher, room…" oninput="renderSess()"/>
+        </div>
+      </div>
+      <div class="stats-row" id="statsRow" style="display:none">
+        <div class="stat-box"><div class="stat-num" id="sN" style="color:#6366f1">0</div><div class="stat-lbl">Classes</div></div>
+        <div class="stat-box"><div class="stat-num" id="sD" style="color:#10b981">0</div><div class="stat-lbl">Divisions</div></div>
+        <div class="stat-box"><div class="stat-num" id="sF" style="color:#f97316">0</div><div class="stat-lbl">Faculty</div></div>
+      </div>
+      <div class="sess-list" id="sessList">
+        <div class="empty"><div class="empty-ico">🏫</div><div class="empty-txt">Click a building on the map<br>to see sessions for the selected<br>day &amp; time slot</div></div>
+      </div>
+    </div>
+
+    <!-- NAVIGATION SIDEBAR -->
+    <div id="navSidebar" class="panel">
+      <div class="sb-head">
+        <h2>🧭 Smart Navigation</h2>
+        <p>Powered by A* &amp; Dijkstra — shortest path on campus</p>
+      </div>
+      <div class="nav-form">
+        <div class="nav-row">
+          <label class="nav-label"><span class="dot dot-from"></span> FROM — Starting Point</label>
+          <select class="nav-select" id="selFrom" onchange="onSelectChange()">
+            <option value="">— Select start location —</option>
+          </select>
+        </div>
+        <div class="nav-row">
+          <label class="nav-label"><span class="dot dot-to"></span> TO — Destination</label>
+          <select class="nav-select" id="selTo" onchange="onSelectChange()">
+            <option value="">— Select destination —</option>
+          </select>
+        </div>
+        <div class="nav-btns">
+          <button class="nav-btn primary" onclick="findPath()">⚡ Find Route</button>
+          <button class="nav-btn secondary" onclick="swapLocations()">⇅ Swap</button>
+        </div>
+      </div>
+      <div class="algo-info">
+        <div class="algo-toggle active-astar" id="togAstar" onclick="setAlgo('astar')">
+          <span class="algo-name">A* Search</span>
+          <span class="algo-desc">Heuristic-guided,<br>faster search</span>
+          <span class="algo-tag astar-tag">⚡ OPTIMAL + FAST</span>
+        </div>
+        <div class="algo-toggle" id="togDijkstra" onclick="setAlgo('dijkstra')">
+          <span class="algo-name">Dijkstra's</span>
+          <span class="algo-desc">Exhaustive, visits<br>all shorter paths</span>
+          <span class="algo-tag dijk-tag">🔍 EXHAUSTIVE</span>
+        </div>
+      </div>
+      <div class="result-panel" id="resultPanel">
+        <div class="empty-nav">
+          <div class="empty-ico">🗺️</div>
+          <div class="empty-txt">Select two locations<br>and press <strong>Find Route</strong><br><small>or click buildings on the map</small></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════
+let activeTab = 'timetable';
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tabTT').classList.toggle('active', tab === 'timetable');
+  document.getElementById('tabNav').classList.toggle('active', tab === 'navigation');
+
+  // Show/hide day bar + div bar
+  document.getElementById('ttControls').style.display = tab === 'timetable' ? '' : 'none';
+
+  // Show/hide toolbars
+  document.getElementById('ttToolbar').style.display = tab === 'timetable' ? '' : 'none';
+  document.getElementById('navToolbar').style.display = tab === 'navigation' ? '' : 'none';
+
+  // Show/hide algo badge in topbar
+  document.getElementById('topAlgoBadge').style.display = tab === 'navigation' ? '' : 'none';
+  // Show/hide slot selector (useful for both)
+  document.getElementById('slotSel').parentElement.querySelector('.slot-label').style.display = tab === 'timetable' ? '' : 'none';
+  document.getElementById('slotSel').style.display = tab === 'timetable' ? '' : 'none';
+
+  // Show/hide sidebars
+  document.getElementById('ttSidebar').classList.toggle('active', tab === 'timetable');
+  document.getElementById('navSidebar').classList.toggle('active', tab === 'navigation');
+
+  // Map cursor
+  const svg = document.getElementById('campusSVG');
+  svg.classList.toggle('nav-mode', tab === 'navigation');
+
+  // Reset nav click step when switching
+  if (tab === 'navigation') mapClickStep = 0;
+
+  // Clear building highlight from timetable
+  if (tab === 'navigation') resetHLTT();
+
+  // Update counts on timetable if switching back
+  if (tab === 'timetable') { updCounts(); renderSess(); }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SHARED — Building meta, colors
+// ═══════════════════════════════════════════════════════════
+const BC = { H:"#f97316", A:"#3b82f6", D:"#8b5cf6", E:"#10b981", HBM:"#eab308" };
+const BN = { H:"H Wing", A:"A Wing", D:"D Block", E:"E Wing", HBM:"HBM Block" };
+const BR = { H:"H001–H311", A:"A001–A210", D:"D011–D310", E:"E101–E311", HBM:"HBM01–HBM13" };
+const BF = { A:"G+2 Floors", D:"G+3 Floors", H:"G+3 + Basement", E:"G+3 Floors", HBM:"Seminar Halls" };
+
+// ═══════════════════════════════════════════════════════════
+//  TIMETABLE DATA & LOGIC
+// ═══════════════════════════════════════════════════════════
+const SLOTS=["8:30 AM","9:25 AM","10:30 AM","11:25 AM","12:20 PM","1:15 PM","2:10 PM","3:05 PM","4:00 PM","4:55 PM","5:50 PM"];
+
+const TT=[
+// ─── CS1 ──────────────────────────────────────────────
+{sl:"8:30 AM",day:"TUE",sub:"Science of Nature (Chem)",type:"theory",room:"D011",div:"CS1",fac:"Vijay Tarange",bldg:"D"},
+{sl:"9:25 AM",day:"TUE",sub:"Essentials of Data Science",type:"theory",room:"D011",div:"CS1",fac:"Savita Mane",bldg:"D"},
+{sl:"10:30 AM",day:"TUE",sub:"SON Lab (C11–AK)",type:"lab",room:"A005",div:"CS1",fac:"Arika Kotha",bldg:"A"},
+{sl:"10:30 AM",day:"TUE",sub:"AM Lab (C11–JI)",type:"lab",room:"H001",div:"CS1",fac:"Janhavi Inamdar",bldg:"H"},
+{sl:"8:30 AM",day:"WED",sub:"Science of Nature (Bio)",type:"theory",room:"D011",div:"CS1",fac:"Sandip Thite",bldg:"D"},
+{sl:"9:25 AM",day:"WED",sub:"Design Thinking",type:"theory",room:"D011",div:"CS1",fac:"M M Charde",bldg:"D"},
+{sl:"1:15 PM",day:"WED",sub:"SIC",type:"theory",room:"D011",div:"CS1",fac:"Asha Abhilas",bldg:"D"},
+{sl:"2:10 PM",day:"WED",sub:"SIC",type:"theory",room:"D011",div:"CS1",fac:"Asha Abhilas",bldg:"D"},
+{sl:"8:30 AM",day:"THU",sub:"Discrete Structure",type:"theory",room:"D011",div:"CS1",fac:"Kanchan Dhote",bldg:"D"},
+{sl:"9:25 AM",day:"THU",sub:"Essentials of Data Science",type:"theory",room:"D011",div:"CS1",fac:"Savita Mane",bldg:"D"},
+{sl:"10:30 AM",day:"THU",sub:"DT Lab (C11–MMC)",type:"lab",room:"H009",div:"CS1",fac:"M M Charde",bldg:"H"},
+{sl:"8:30 AM",day:"FRI",sub:"Applied Mechanics",type:"theory",room:"D011",div:"CS1",fac:"Munniappan",bldg:"D"},
+{sl:"9:25 AM",day:"FRI",sub:"Discrete Structure",type:"theory",room:"D011",div:"CS1",fac:"Kanchan Dhote",bldg:"D"},
+{sl:"10:30 AM",day:"FRI",sub:"DT Lab (C11–MMC)",type:"lab",room:"H009",div:"CS1",fac:"M M Charde",bldg:"H"},
+{sl:"1:15 PM",day:"FRI",sub:"Science of Nature (Chem)",type:"theory",room:"D011",div:"CS1",fac:"Vijay Tarange",bldg:"D"},
+{sl:"2:10 PM",day:"FRI",sub:"SIC",type:"theory",room:"D011",div:"CS1",fac:"Asha Abhilas",bldg:"D"},
+{sl:"4:00 PM",day:"FRI",sub:"Maths Tutorial (C11)",type:"lab",room:"D108",div:"CS1",fac:"Asha Abhilas",bldg:"D"},
+{sl:"10:30 AM",day:"SAT",sub:"EDS Lab (C11–RB)",type:"lab",room:"A207A",div:"CS1",fac:"Rohini Banait",bldg:"A"},
+{sl:"1:15 PM",day:"SAT",sub:"Applied Mechanics",type:"theory",room:"D109",div:"CS1",fac:"Munniappan",bldg:"D"},
+{sl:"2:10 PM",day:"SAT",sub:"Data Visualization",type:"theory",room:"D109",div:"CS1",fac:"Ambika Kalbandi",bldg:"D"},
+{sl:"10:30 AM",day:"SAT",sub:"DV Lab (C11–AK)",type:"lab",room:"A207B",div:"CS1",fac:"Ambika Kalbandi",bldg:"A"},
+// ─── CS2 ──────────────────────────────────────────────
+{sl:"10:30 AM",day:"TUE",sub:"EDS Lab (C12–SM)",type:"lab",room:"A207D",div:"CS2",fac:"Savita Mane",bldg:"A"},
+{sl:"10:30 AM",day:"TUE",sub:"SON Lab (C12–VT)",type:"lab",room:"A006",div:"CS2",fac:"Vijay Tarange",bldg:"A"},
+{sl:"10:30 AM",day:"WED",sub:"EDS Lab (C13–SM)",type:"lab",room:"E210",div:"CS2",fac:"Savita Mane",bldg:"E"},
+{sl:"10:30 AM",day:"WED",sub:"DV Lab (C14–AK)",type:"lab",room:"A207C",div:"CS2",fac:"Ambika Kalbandi",bldg:"A"},
+{sl:"10:30 AM",day:"THU",sub:"EDS Lab (C14–SM)",type:"lab",room:"A207B",div:"CS2",fac:"Savita Mane",bldg:"A"},
+{sl:"10:30 AM",day:"THU",sub:"AM Lab (C12–VP)",type:"lab",room:"H001",div:"CS2",fac:"Vijay Pingale",bldg:"H"},
+{sl:"10:30 AM",day:"FRI",sub:"SON Lab (C14–PR)",type:"lab",room:"A005",div:"CS2",fac:"Piyali Roychoudhary",bldg:"A"},
+{sl:"1:15 PM",day:"FRI",sub:"Science of Nature (Chem)",type:"theory",room:"D011",div:"CS2",fac:"Vijay Tarange",bldg:"D"},
+{sl:"4:00 PM",day:"FRI",sub:"Maths Tutorial (C12)",type:"lab",room:"D108",div:"CS2",fac:"Asha Abhilas",bldg:"D"},
+{sl:"10:30 AM",day:"SAT",sub:"DV Lab (C12–AK)",type:"lab",room:"A207B",div:"CS2",fac:"Ambika Kalbandi",bldg:"A"},
+// ─── CS3 ──────────────────────────────────────────────
+{sl:"8:30 AM",day:"MON",sub:"Science of Nature (Bio)",type:"theory",room:"D203",div:"CS3",fac:"Sandip Thite",bldg:"D"},
+{sl:"9:25 AM",day:"MON",sub:"EDS",type:"theory",room:"D203",div:"CS3",fac:"Navnath Kale",bldg:"D"},
+{sl:"1:15 PM",day:"MON",sub:"SIC",type:"theory",room:"D203",div:"CS3",fac:"Satish Gajbhiv",bldg:"D"},
+{sl:"2:10 PM",day:"MON",sub:"EDS",type:"theory",room:"D109",div:"CS3",fac:"Navnath Kale",bldg:"D"},
+{sl:"3:05 PM",day:"MON",sub:"Applied Mechanics",type:"theory",room:"D109",div:"CS3",fac:"Sitaram Suryavanshi",bldg:"D"},
+{sl:"10:30 AM",day:"TUE",sub:"EDS Lab (C23–NDK)",type:"lab",room:"H008",div:"CS3",fac:"Navnath Kale",bldg:"H"},
+{sl:"8:30 AM",day:"WED",sub:"Applied Mechanics",type:"theory",room:"D203",div:"CS3",fac:"Sitaram Suryavanshi",bldg:"D"},
+{sl:"9:25 AM",day:"WED",sub:"SIC",type:"theory",room:"D203",div:"CS3",fac:"Satish Gajbhiv",bldg:"D"},
+{sl:"10:30 AM",day:"WED",sub:"SON Lab (C22–PR)",type:"lab",room:"A005",div:"CS3",fac:"Piyali Roychoudhary",bldg:"A"},
+{sl:"10:30 AM",day:"WED",sub:"DT Lab (C21–ABM)",type:"lab",room:"H009",div:"CS3",fac:"AB Mane",bldg:"H"},
+{sl:"8:30 AM",day:"THU",sub:"Discrete Structure",type:"theory",room:"D203",div:"CS3",fac:"Kanchan Dhote",bldg:"D"},
+{sl:"9:25 AM",day:"THU",sub:"SON (Bio)",type:"theory",room:"D203",div:"CS3",fac:"Kalpana Pawse/Sandip Thite",bldg:"D"},
+{sl:"10:30 AM",day:"THU",sub:"SON Lab (C24–KCJ)",type:"lab",room:"A005",div:"CS3",fac:"K C Junghare",bldg:"A"},
+{sl:"10:30 AM",day:"THU",sub:"EDS Lab (C25–NDK)",type:"lab",room:"A207C",div:"CS3",fac:"Navnath Kale",bldg:"A"},
+{sl:"3:05 PM",day:"MON",sub:"Maths Tutorial (C23)",type:"lab",room:"D202",div:"CS3",fac:"Satish Gajbhiv",bldg:"D"},
+{sl:"8:30 AM",day:"SAT",sub:"Data Visualization",type:"theory",room:"D203",div:"CS3",fac:"Disha Sengupta",bldg:"D"},
+{sl:"10:30 AM",day:"SAT",sub:"DV Lab (C23–DS)",type:"lab",room:"A207B",div:"CS3",fac:"Disha Sengupta",bldg:"A"},
+{sl:"10:30 AM",day:"SAT",sub:"SON Lab (C25–VT)",type:"lab",room:"A005",div:"CS3",fac:"Vijay Tarange",bldg:"A"},
+// ─── CS4 ──────────────────────────────────────────────
+{sl:"10:30 AM",day:"MON",sub:"SON Lab (C41–PR)",type:"lab",room:"A006",div:"CS4",fac:"Piyali Roychoudhary",bldg:"A"},
+{sl:"10:30 AM",day:"MON",sub:"EDS Lab (C42–MN)",type:"lab",room:"E210",div:"CS4",fac:"Madhavi Nimkar",bldg:"E"},
+{sl:"10:30 AM",day:"MON",sub:"DV Lab (C43–PN)",type:"lab",room:"A207D",div:"CS4",fac:"Padma Nimbhore",bldg:"A"},
+{sl:"10:30 AM",day:"MON",sub:"AM Lab (C44–JI)",type:"lab",room:"H106",div:"CS4",fac:"J Inamdar",bldg:"H"},
+{sl:"10:30 AM",day:"MON",sub:"DT Lab (C45–PJ)",type:"lab",room:"H101",div:"CS4",fac:"Prashant Jikar",bldg:"H"},
+{sl:"1:15 PM",day:"MON",sub:"Applied Mechanics",type:"theory",room:"D011",div:"CS4",fac:"Nilesh Mate",bldg:"D"},
+{sl:"2:10 PM",day:"MON",sub:"SIC",type:"theory",room:"D011",div:"CS4",fac:"Manisha Pansare",bldg:"D"},
+{sl:"2:10 PM",day:"TUE",sub:"EDS",type:"theory",room:"D310",div:"CS4",fac:"Madhavi Nimkar",bldg:"D"},
+{sl:"3:05 PM",day:"TUE",sub:"Applied Mechanics",type:"theory",room:"D310",div:"CS4",fac:"Nilesh Mate",bldg:"D"},
+{sl:"3:05 PM",day:"TUE",sub:"Maths Tutorial (C43)",type:"lab",room:"D309",div:"CS4",fac:"Manisha Pansare",bldg:"D"},
+{sl:"8:30 AM",day:"THU",sub:"Discrete Structure",type:"theory",room:"D203",div:"CS4",fac:"Amrit Kumar Shinde",bldg:"D"},
+{sl:"9:25 AM",day:"THU",sub:"Data Visualization",type:"theory",room:"D203",div:"CS4",fac:"Padma Nimbhore",bldg:"D"},
+{sl:"10:30 AM",day:"THU",sub:"SON Lab (C44–PGS)",type:"lab",room:"A005",div:"CS4",fac:"Pravin Suryavanshi",bldg:"A"},
+{sl:"10:30 AM",day:"THU",sub:"EDS Lab (C45–MN)",type:"lab",room:"H007",div:"CS4",fac:"Madhavi Nimkar",bldg:"H"},
+{sl:"2:10 PM",day:"THU",sub:"EDS",type:"theory",room:"D203",div:"CS4",fac:"Madhavi Nimkar",bldg:"D"},
+{sl:"3:05 PM",day:"THU",sub:"SIC",type:"theory",room:"D203",div:"CS4",fac:"Manisha Pansare",bldg:"D"},
+{sl:"2:10 PM",day:"FRI",sub:"Design Thinking",type:"theory",room:"D011",div:"CS4",fac:"Prashant Jikar",bldg:"D"},
+{sl:"3:05 PM",day:"FRI",sub:"Discrete Structure",type:"theory",room:"D011",div:"CS4",fac:"Amrit Kumar Shinde",bldg:"D"},
+{sl:"10:30 AM",day:"FRI",sub:"SON Lab (C42–PGS)",type:"lab",room:"A005",div:"CS4",fac:"Pravin Suryavanshi",bldg:"A"},
+{sl:"10:30 AM",day:"FRI",sub:"DT Lab (C41–PJ)",type:"lab",room:"H102",div:"CS4",fac:"Prashant Jikar",bldg:"H"},
+// ─── DS1 ──────────────────────────────────────────────
+{sl:"9:25 AM",day:"MON",sub:"Essentials of Data Science",type:"theory",room:"D309",div:"DS1",fac:"Suyoga Bansode",bldg:"D"},
+{sl:"10:30 AM",day:"MON",sub:"Discrete Structure",type:"theory",room:"D309",div:"DS1",fac:"Prajakta Jadhav",bldg:"D"},
+{sl:"1:15 PM",day:"MON",sub:"Science of Nature (Chem)",type:"theory",room:"D010",div:"DS1",fac:"A M Kapse",bldg:"D"},
+{sl:"2:10 PM",day:"MON",sub:"SIC",type:"theory",room:"D010",div:"DS1",fac:"Satish Gajbhiv",bldg:"D"},
+{sl:"10:30 AM",day:"MON",sub:"AM Lab (D11–MP)",type:"lab",room:"H106",div:"DS1",fac:"Mrudula Patil",bldg:"H"},
+{sl:"10:30 AM",day:"MON",sub:"DT Lab (D12–NBT)",type:"lab",room:"H009",div:"DS1",fac:"N B Totla",bldg:"H"},
+{sl:"10:30 AM",day:"MON",sub:"DV Lab (D13–SP)",type:"lab",room:"IC2",div:"DS1",fac:"Swati Patil",bldg:"E"},
+{sl:"10:30 AM",day:"TUE",sub:"EDS Lab (D11–SB)",type:"lab",room:"IC2",div:"DS1",fac:"Suyoga Bansode",bldg:"E"},
+{sl:"10:30 AM",day:"TUE",sub:"AM Lab (D13–MP)",type:"lab",room:"H001",div:"DS1",fac:"Mrudula Patil",bldg:"H"},
+{sl:"9:25 AM",day:"TUE",sub:"Data Visualization",type:"theory",room:"D010",div:"DS1",fac:"Swati Patil",bldg:"D"},
+{sl:"10:30 AM",day:"TUE",sub:"SIC",type:"theory",room:"D010",div:"DS1",fac:"Satish Gajbhiv",bldg:"D"},
+{sl:"3:05 PM",day:"TUE",sub:"Maths Tutorial (D12)",type:"lab",room:"D010",div:"DS1",fac:"Satish Gajbhiv",bldg:"D"},
+{sl:"8:30 AM",day:"THU",sub:"Applied Mechanics",type:"theory",room:"D010",div:"DS1",fac:"Mrudula Patil",bldg:"D"},
+{sl:"9:25 AM",day:"THU",sub:"Science of Nature (Chem)",type:"theory",room:"D010",div:"DS1",fac:"A M Kapse",bldg:"D"},
+{sl:"10:30 AM",day:"THU",sub:"EDS Lab (D12–SB)",type:"lab",room:"IC3",div:"DS1",fac:"Suyoga Bansode",bldg:"E"},
+{sl:"10:30 AM",day:"THU",sub:"DV Lab (D11–SP)",type:"lab",room:"IC2",div:"DS1",fac:"Swati Patil",bldg:"E"},
+{sl:"3:05 PM",day:"THU",sub:"Applied Mechanics",type:"theory",room:"D010",div:"DS1",fac:"Mrudula Patil",bldg:"D"},
+{sl:"4:00 PM",day:"THU",sub:"SIC",type:"theory",room:"D010",div:"DS1",fac:"Satish Gajbhiv",bldg:"D"},
+{sl:"10:30 AM",day:"FRI",sub:"AM Lab (D12–MP)",type:"lab",room:"A106",div:"DS1",fac:"Mrudula Patil",bldg:"A"},
+{sl:"10:30 AM",day:"FRI",sub:"DT Lab (D13–NBT)",type:"lab",room:"H101",div:"DS1",fac:"N B Totla",bldg:"H"},
+{sl:"1:15 PM",day:"FRI",sub:"SON (Bio)",type:"theory",room:"D309",div:"DS1",fac:"Kalpana Pawse/Prajakta Jadhav",bldg:"D"},
+{sl:"2:10 PM",day:"FRI",sub:"Discrete Structure",type:"theory",room:"D309",div:"DS1",fac:"Prajakta Jadhav",bldg:"D"},
+{sl:"10:30 AM",day:"FRI",sub:"EDS Lab (D13–SB)",type:"lab",room:"IC3",div:"DS1",fac:"Suyoga Bansode",bldg:"E"},
+{sl:"10:30 AM",day:"FRI",sub:"DV Lab (D12–SP)",type:"lab",room:"IC2",div:"DS1",fac:"Swati Patil",bldg:"E"},
+{sl:"1:15 PM",day:"TUE",sub:"DT Lab / SON Lab",type:"lab",room:"H101/A005",div:"DS1",fac:"NBT / PGS",bldg:"H"},
+{sl:"4:55 PM",day:"FRI",sub:"SON Lab (D13–PGS)",type:"lab",room:"A005",div:"DS1",fac:"P G Suryawanshi",bldg:"A"},
+{sl:"3:05 PM",day:"MON",sub:"Maths Tutorial (D13)",type:"lab",room:"D010",div:"DS1",fac:"Satish Gajbhiv",bldg:"D"},
+// ─── DS2 ──────────────────────────────────────────────
+{sl:"10:30 AM",day:"MON",sub:"SON Lab (D23–SSS)",type:"lab",room:"A005",div:"DS2",fac:"Sonali Saxena",bldg:"A"},
+{sl:"10:30 AM",day:"MON",sub:"EDS Lab (D21–MB)",type:"lab",room:"A207A",div:"DS2",fac:"Monali Bansode",bldg:"A"},
+{sl:"10:30 AM",day:"MON",sub:"DV Lab (D22–SP)",type:"lab",room:"A207B",div:"DS2",fac:"Swati Patil",bldg:"A"},
+{sl:"8:30 AM",day:"MON",sub:"Applied Mechanics",type:"theory",room:"D108",div:"DS2",fac:"S Wagh",bldg:"D"},
+{sl:"9:25 AM",day:"MON",sub:"Discrete Structure",type:"theory",room:"D108",div:"DS2",fac:"Rahul A",bldg:"D"},
+{sl:"8:30 AM",day:"TUE",sub:"EDS",type:"theory",room:"D108",div:"DS2",fac:"Suyoga Bansode",bldg:"D"},
+{sl:"9:25 AM",day:"TUE",sub:"SIC",type:"theory",room:"D108",div:"DS2",fac:"Sini Ronson",bldg:"D"},
+{sl:"8:30 AM",day:"WED",sub:"SON (Bio)",type:"theory",room:"D010",div:"DS2",fac:"Mahesh D Goudar/Prajakta Jadhav",bldg:"D"},
+{sl:"9:25 AM",day:"WED",sub:"Discrete Structure",type:"theory",room:"D010",div:"DS2",fac:"Rahul A",bldg:"D"},
+{sl:"10:30 AM",day:"WED",sub:"SON (Chem)",type:"theory",room:"D108",div:"DS2",fac:"A M Kapse",bldg:"D"},
+{sl:"11:25 AM",day:"WED",sub:"Design Thinking",type:"theory",room:"D108",div:"DS2",fac:"M M Charde",bldg:"D"},
+{sl:"10:30 AM",day:"THU",sub:"EDS Lab (D23–MB)",type:"lab",room:"IC2",div:"DS2",fac:"Monali Bansode",bldg:"E"},
+{sl:"10:30 AM",day:"THU",sub:"DV Lab (D21–SP)",type:"lab",room:"IC3",div:"DS2",fac:"Swati Patil",bldg:"E"},
+{sl:"8:30 AM",day:"THU",sub:"SON (Chem)",type:"theory",room:"D010",div:"DS2",fac:"A M Kapse",bldg:"D"},
+{sl:"9:25 AM",day:"THU",sub:"SIC",type:"theory",room:"D010",div:"DS2",fac:"Sini Ronson",bldg:"D"},
+{sl:"2:10 PM",day:"THU",sub:"EDS",type:"theory",room:"D108",div:"DS2",fac:"Suyoga Bansode",bldg:"D"},
+{sl:"3:05 PM",day:"THU",sub:"Data Visualization",type:"theory",room:"D108",div:"DS2",fac:"Swati Patil",bldg:"D"},
+{sl:"8:30 AM",day:"FRI",sub:"Applied Mechanics",type:"theory",room:"D108",div:"DS2",fac:"S Wagh",bldg:"D"},
+{sl:"9:25 AM",day:"FRI",sub:"SIC",type:"theory",room:"D108",div:"DS2",fac:"Sini Ronson",bldg:"D"},
+{sl:"3:05 PM",day:"FRI",sub:"Maths Tutorial (D22)",type:"lab",room:"D305",div:"DS2",fac:"Sini Ronson",bldg:"D"},
+{sl:"10:30 AM",day:"FRI",sub:"AM Lab (D23–SW)",type:"lab",room:"H106",div:"DS2",fac:"S Wagh",bldg:"H"},
+{sl:"10:30 AM",day:"FRI",sub:"DT Lab (D22–MMC)",type:"lab",room:"H009",div:"DS2",fac:"M M Charde",bldg:"H"},
+{sl:"10:30 AM",day:"MON",sub:"AM Lab (D21–SW)",type:"lab",room:"H106",div:"DS2",fac:"S Wagh",bldg:"H"},
+{sl:"10:30 AM",day:"MON",sub:"DT Lab (D23–NC)",type:"lab",room:"H101",div:"DS2",fac:"Nitasha Chaudhari",bldg:"H"},
+// ─── IT1 ──────────────────────────────────────────────
+{sl:"10:30 AM",day:"MON",sub:"EDS Lab (I11–SK)",type:"lab",room:"A207A",div:"IT1",fac:"Sopan Kshirsagar",bldg:"A"},
+{sl:"10:30 AM",day:"MON",sub:"DV Lab (I12–PD)",type:"lab",room:"A207B",div:"IT1",fac:"Pragati Deole",bldg:"A"},
+{sl:"1:15 PM",day:"MON",sub:"Digital Electronics Engg",type:"theory",room:"D109",div:"IT1",fac:"Satish Kabra",bldg:"D"},
+{sl:"2:10 PM",day:"MON",sub:"Engineering Physics",type:"theory",room:"D109",div:"IT1",fac:"Madhuri DR",bldg:"D"},
+{sl:"3:05 PM",day:"MON",sub:"SIC",type:"theory",room:"D310",div:"IT1",fac:"Ankush Patil",bldg:"D"},
+{sl:"4:00 PM",day:"MON",sub:"Essentials of Data Science",type:"theory",room:"D310",div:"IT1",fac:"Sopan Kshirsagar",bldg:"D"},
+{sl:"8:30 AM",day:"TUE",sub:"Discrete Structure",type:"theory",room:"D109",div:"IT1",fac:"Sandip Shirvale",bldg:"D"},
+{sl:"9:25 AM",day:"TUE",sub:"SIC",type:"theory",room:"D109",div:"IT1",fac:"Ankush Patil",bldg:"D"},
+{sl:"10:30 AM",day:"TUE",sub:"EDS Lab (I12–SK)",type:"lab",room:"A207A",div:"IT1",fac:"Sopan Kshirsagar",bldg:"A"},
+{sl:"10:30 AM",day:"TUE",sub:"DV Lab (I13–PD)",type:"lab",room:"A207B",div:"IT1",fac:"Pragati Deole",bldg:"A"},
+{sl:"1:15 PM",day:"WED",sub:"Digital Electronics Engg",type:"theory",room:"D310",div:"IT1",fac:"Satish Kabra",bldg:"D"},
+{sl:"2:10 PM",day:"WED",sub:"Engineering Physics",type:"theory",room:"D310",div:"IT1",fac:"Madhuri DR",bldg:"D"},
+{sl:"8:30 AM",day:"THU",sub:"Essentials of Data Science",type:"theory",room:"D310",div:"IT1",fac:"Sopan Kshirsagar",bldg:"D"},
+{sl:"9:25 AM",day:"THU",sub:"Data Visualization",type:"theory",room:"D310",div:"IT1",fac:"Pragati Deole",bldg:"D"},
+{sl:"10:30 AM",day:"THU",sub:"CSE Lab (I11–HS)",type:"lab",room:"H107",div:"IT1",fac:"Hussain Shaikh",bldg:"H"},
+{sl:"8:30 AM",day:"FRI",sub:"Essentials of Data Science",type:"theory",room:"D310",div:"IT1",fac:"Sopan Kshirsagar",bldg:"D"},
+{sl:"9:25 AM",day:"FRI",sub:"Data Visualization",type:"theory",room:"D310",div:"IT1",fac:"Pragati Deole",bldg:"D"},
+{sl:"1:15 PM",day:"FRI",sub:"SIC",type:"theory",room:"D109",div:"IT1",fac:"Ankush Patil",bldg:"D"},
+{sl:"2:10 PM",day:"FRI",sub:"Discrete Structure",type:"theory",room:"D109",div:"IT1",fac:"Sandip Shirvale",bldg:"D"},
+{sl:"10:30 AM",day:"FRI",sub:"EDS Lab (I15–SA)",type:"lab",room:"A207C",div:"IT1",fac:"Santosh Ambre",bldg:"A"},
+{sl:"10:30 AM",day:"FRI",sub:"DV Lab (I11–PD)",type:"lab",room:"A207B",div:"IT1",fac:"Pragati Deole",bldg:"A"},
+{sl:"4:00 PM",day:"MON",sub:"Maths Tutorial (I14)",type:"lab",room:"D202",div:"IT1",fac:"Ankush Patil",bldg:"D"},
+// ─── IT2 ──────────────────────────────────────────────
+{sl:"10:30 AM",day:"MON",sub:"DEE Lab (I23–AK)",type:"lab",room:"A209",div:"IT2",fac:"Aniket Kemalkar",bldg:"A"},
+{sl:"10:30 AM",day:"MON",sub:"DV Lab (I24–SP)",type:"lab",room:"E210",div:"IT2",fac:"Shivaji Patil",bldg:"E"},
+{sl:"2:10 PM",day:"MON",sub:"EDS",type:"theory",room:"D203",div:"IT2",fac:"Sopan Kshirsagar",bldg:"D"},
+{sl:"3:05 PM",day:"MON",sub:"Engineering Physics",type:"theory",room:"D203",div:"IT2",fac:"Madhuri DR",bldg:"D"},
+{sl:"10:30 AM",day:"TUE",sub:"EDS Lab (I24–SA)",type:"lab",room:"A207D",div:"IT2",fac:"Santosh Ambre",bldg:"A"},
+{sl:"10:30 AM",day:"TUE",sub:"DV Lab (I22–SP)",type:"lab",room:"A207C",div:"IT2",fac:"Shivaji Patil",bldg:"A"},
+{sl:"1:15 PM",day:"TUE",sub:"SIC",type:"theory",room:"D203",div:"IT2",fac:"Punam Gawali",bldg:"D"},
+{sl:"2:10 PM",day:"TUE",sub:"Digital Electronics Engg",type:"theory",room:"D203",div:"IT2",fac:"Satish Kabra",bldg:"D"},
+{sl:"8:30 AM",day:"WED",sub:"EDS",type:"theory",room:"D109",div:"IT2",fac:"Sopan Kshirsagar",bldg:"D"},
+{sl:"9:25 AM",day:"WED",sub:"SIC",type:"theory",room:"D109",div:"IT2",fac:"Punam Gawali",bldg:"D"},
+{sl:"8:30 AM",day:"THU",sub:"Discrete Structure",type:"theory",room:"D310",div:"IT2",fac:"Sandip Shirvale",bldg:"D"},
+// ─── CV ──────────────────────────────────────────────
+{sl:"8:30 AM",day:"MON",sub:"Applied Mechanics",type:"theory",room:"D108",div:"CV",fac:"Muniappan",bldg:"D"},
+{sl:"9:25 AM",day:"MON",sub:"SIC",type:"theory",room:"D108",div:"CV",fac:"Manisha Pansare",bldg:"D"},
+{sl:"10:30 AM",day:"MON",sub:"Basics of Civil Engineering",type:"theory",room:"D108",div:"CV",fac:"Muniappan",bldg:"D"},
+{sl:"1:15 PM",day:"MON",sub:"SON (Chem)",type:"theory",room:"D309",div:"CV",fac:"Shailesh Doke",bldg:"D"},
+{sl:"8:30 AM",day:"WED",sub:"SIC",type:"theory",room:"D108",div:"CV",fac:"Manisha Pansare",bldg:"D"},
+{sl:"9:25 AM",day:"WED",sub:"EDS",type:"theory",room:"D108",div:"CV",fac:"Suvidha Shah",bldg:"D"},
+{sl:"10:30 AM",day:"WED",sub:"EDS",type:"theory",room:"D108",div:"CV",fac:"Suvidha Shah",bldg:"D"},
+{sl:"11:25 AM",day:"WED",sub:"Basics of Civil Engineering",type:"theory",room:"D108",div:"CV",fac:"Muniappan",bldg:"D"},
+{sl:"1:15 PM",day:"WED",sub:"EDS Lab (CV1–PK)",type:"lab",room:"E210",div:"CV",fac:"Priyanka Kasare",bldg:"E"},
+{sl:"1:15 PM",day:"WED",sub:"AM Lab (CV2–MP)",type:"lab",room:"H106",div:"CV",fac:"Mrudula Patil",bldg:"H"},
+{sl:"1:15 PM",day:"WED",sub:"DT Lab (CV3–ABM)",type:"lab",room:"H009",div:"CV",fac:"Archna Mane",bldg:"H"},
+{sl:"10:30 AM",day:"THU",sub:"AM Lab (CV3–MP)",type:"lab",room:"H001",div:"CV",fac:"Mrudula Patil",bldg:"H"},
+{sl:"10:30 AM",day:"THU",sub:"DT Lab (CV1–PJ)",type:"lab",room:"H102",div:"CV",fac:"Prashant Jikar",bldg:"H"},
+{sl:"1:15 PM",day:"THU",sub:"Basics of Civil Engineering",type:"theory",room:"D202",div:"CV",fac:"Muniappan",bldg:"D"},
+{sl:"2:10 PM",day:"THU",sub:"SON (Chem)",type:"theory",room:"D202",div:"CV",fac:"Shailesh Doke",bldg:"D"},
+{sl:"1:15 PM",day:"FRI",sub:"SON (Bio)",type:"theory",room:"D202",div:"CV",fac:"Kalpana Pawse",bldg:"D"},
+{sl:"2:10 PM",day:"FRI",sub:"Design Thinking",type:"theory",room:"D202",div:"CV",fac:"Prashant Jikar",bldg:"D"},
+{sl:"1:15 PM",day:"FRI",sub:"SON Lab (CV2–SBD)",type:"lab",room:"A006",div:"CV",fac:"Shailesh Doke",bldg:"A"},
+{sl:"1:15 PM",day:"FRI",sub:"EDS Lab (CV3–SS)",type:"lab",room:"E210",div:"CV",fac:"Supriya Sabale",bldg:"E"},
+{sl:"3:05 PM",day:"WED",sub:"Maths Tutorial (CV1)",type:"lab",room:"HBM11",div:"CV",fac:"Manisha Pansare",bldg:"HBM"},
+{sl:"3:05 PM",day:"THU",sub:"Maths Tutorial (CV3)",type:"lab",room:"D202",div:"CV",fac:"Manisha Pansare",bldg:"D"},
+// ─── CH ──────────────────────────────────────────────
+{sl:"10:30 AM",day:"MON",sub:"SON (Chem)",type:"theory",room:"D202",div:"CH",fac:"Shailesh Doke",bldg:"D"},
+{sl:"11:25 AM",day:"MON",sub:"Design Thinking",type:"theory",room:"D202",div:"CH",fac:"N B Totla",bldg:"D"},
+{sl:"1:15 PM",day:"MON",sub:"Applied Mechanics",type:"theory",room:"D108",div:"CH",fac:"Swapnil Pathare",bldg:"D"},
+{sl:"2:10 PM",day:"MON",sub:"SIC",type:"theory",room:"D108",div:"CH",fac:"Asha Abhilash",bldg:"D"},
+{sl:"1:15 PM",day:"MON",sub:"SON Lab (CH1–PR)",type:"lab",room:"A005",div:"CH",fac:"Piyali Roychoudhary",bldg:"A"},
+{sl:"1:15 PM",day:"MON",sub:"EDS Lab (CH2–SM)",type:"lab",room:"A207D",div:"CH",fac:"Savita Mane",bldg:"A"},
+{sl:"3:05 PM",day:"MON",sub:"Maths Tutorial (CH3)",type:"lab",room:"D108",div:"CH",fac:"Asha Abhilash",bldg:"D"},
+{sl:"10:30 AM",day:"TUE",sub:"CACE Lab (CH2–SKT)",type:"lab",room:"HBM13",div:"CH",fac:"Suyog Taralkar",bldg:"HBM"},
+{sl:"1:15 PM",day:"TUE",sub:"Applied Mechanics",type:"theory",room:"D309",div:"CH",fac:"Swapnil Pathare",bldg:"D"},
+{sl:"2:10 PM",day:"TUE",sub:"SIC",type:"theory",room:"D309",div:"CH",fac:"Asha Abhilash",bldg:"D"},
+{sl:"1:15 PM",day:"TUE",sub:"AM Lab (CH1–VP)",type:"lab",room:"H106",div:"CH",fac:"Vijay Pingale",bldg:"H"},
+{sl:"1:15 PM",day:"TUE",sub:"DT Lab (CH3–NBT)",type:"lab",room:"H009",div:"CH",fac:"N B Totla",bldg:"H"},
+{sl:"3:05 PM",day:"TUE",sub:"SON Lab (CH3–SBD)",type:"lab",room:"A005",div:"CH",fac:"Shailesh Doke",bldg:"A"},
+{sl:"8:30 AM",day:"WED",sub:"AM Lab (CH2–SAP)",type:"lab",room:"H106",div:"CH",fac:"Swapnil Pathare",bldg:"H"},
+{sl:"8:30 AM",day:"WED",sub:"DT Lab (CH1–NBT)",type:"lab",room:"H101",div:"CH",fac:"N B Totla",bldg:"H"},
+{sl:"8:30 AM",day:"WED",sub:"EDS Lab (CH3–SS)",type:"lab",room:"IC2",div:"CH",fac:"Supriya Sabale",bldg:"E"},
+{sl:"9:25 AM",day:"WED",sub:"EDS",type:"theory",room:"D202",div:"CH",fac:"Supriya Sabale",bldg:"D"},
+{sl:"10:30 AM",day:"WED",sub:"Chemical Process Calc",type:"theory",room:"D202",div:"CH",fac:"K C Junghare",bldg:"D"},
+{sl:"1:15 PM",day:"WED",sub:"SON (Chem)",type:"theory",room:"D309",div:"CH",fac:"Shailesh Doke",bldg:"D"},
+{sl:"2:10 PM",day:"WED",sub:"SON (Bio)",type:"theory",room:"D309",div:"CH",fac:"Nutan Wagh",bldg:"D"},
+{sl:"8:30 AM",day:"WED",sub:"CACE Lab (CH1–PR)",type:"lab",room:"H007",div:"CH",fac:"Piyali Roychoudhary",bldg:"H"},
+{sl:"8:30 AM",day:"THU",sub:"AM Lab (CH3–AG)",type:"lab",room:"H106",div:"CH",fac:"A Galagali",bldg:"H"},
+{sl:"8:30 AM",day:"THU",sub:"DT Lab (CH2–NBT)",type:"lab",room:"H101",div:"CH",fac:"N B Totla",bldg:"H"},
+{sl:"9:25 AM",day:"THU",sub:"CACE (Computer Aided Chem Engg)",type:"theory",room:"D202",div:"CH",fac:"Piyali Roychoudhary",bldg:"D"},
+{sl:"10:30 AM",day:"THU",sub:"Chemical Process Calc",type:"theory",room:"D202",div:"CH",fac:"K C Junghare",bldg:"D"},
+{sl:"8:30 AM",day:"THU",sub:"CACE Lab (CH3–PR)",type:"lab",room:"H002",div:"CH",fac:"Piyali Roychoudhary",bldg:"H"},
+{sl:"3:05 PM",day:"THU",sub:"Maths Tutorial (CH1)",type:"lab",room:"D307",div:"CH",fac:"Asha Abhilash",bldg:"D"},
+{sl:"8:30 AM",day:"FRI",sub:"EDS Lab (CH1–SM)",type:"lab",room:"IC2",div:"CH",fac:"Savita Mane",bldg:"E"},
+{sl:"9:25 AM",day:"FRI",sub:"EDS",type:"theory",room:"D010",div:"CH",fac:"Supriya Sabale",bldg:"D"},
+{sl:"10:30 AM",day:"FRI",sub:"SIC",type:"theory",room:"D010",div:"CH",fac:"Asha Abhilash",bldg:"D"},
+{sl:"1:15 PM",day:"FRI",sub:"SON Lab (CH2–SSS)",type:"lab",room:"A006",div:"CH",fac:"Sonali Saxena",bldg:"A"},
+];
+
+let curBldg=null, myDiv="ALL", showFacTT=false, curView="map", curDay="MON";
+
+function initSlots(){
+  const sel=document.getElementById("slotSel");
+  SLOTS.forEach(s=>{const o=document.createElement("option");o.value=o.textContent=s;sel.appendChild(o);});
+  const n=new Date(),h=n.getHours(),m=n.getMinutes();
+  let best=SLOTS[0];
+  SLOTS.forEach(s=>{
+    const parts=s.split(" "),tp=parts[0].split(":").map(Number);
+    let sh=tp[0],sm=tp[1];
+    if(parts[1]==="PM"&&sh!==12)sh+=12;if(parts[1]==="AM"&&sh===12)sh=0;
+    if(sh*60+sm<=h*60+m)best=s;
+  });
+  sel.value=best;
+  sel.addEventListener("change",()=>{updCounts();renderSess();});
+}
+function getSlot(){return document.getElementById("slotSel").value;}
+
+function setDay(btn){
+  document.querySelectorAll(".day-pill").forEach(p=>p.classList.remove("active"));
+  btn.classList.add("active");curDay=btn.dataset.day;
+  updCounts();renderSess();
+}
+function setDiv(btn){
+  document.querySelectorAll(".dpill").forEach(p=>{p.className="dpill";});
+  const d=btn.dataset.d,cat=btn.dataset.cat||"all";
+  if(d==="ALL")btn.classList.add("sel-all");
+  else btn.classList.add("sel-"+cat);
+  myDiv=d;
+  const si=document.getElementById("savedInfo"),sc=document.getElementById("savedChip");
+  if(myDiv!=="ALL"){si.style.display="flex";sc.textContent=myDiv;}else si.style.display="none";
+  updCounts();renderSess();
+}
+
+function getSess(b){
+  const t=getSlot(),q=document.getElementById("srchInp").value.toLowerCase();
+  return TT.filter(s=>{
+    if(b&&s.bldg!==b)return false;
+    if(s.sl!==t)return false;
+    if(s.day!==curDay)return false;
+    if(myDiv!=="ALL"&&s.div!==myDiv)return false;
+    if(q&&!s.sub.toLowerCase().includes(q)&&!s.fac.toLowerCase().includes(q)&&!s.room.toLowerCase().includes(q)&&!s.div.toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+function updCounts(){
+  ["A","D","H","E","HBM"].forEach(b=>{
+    const cnt=getSess(b).length,el=document.getElementById("c"+b);
+    if(el)el.textContent=cnt>0?cnt+" session"+(cnt!==1?"s":""):"";
+  });
+}
+function divBadgeClass(d){
+  if(d.startsWith("CS"))return"b-cs";if(d.startsWith("IT"))return"b-it";
+  if(d.startsWith("ME"))return"b-me";if(d.startsWith("CH"))return"b-ch";
+  if(d==="CV")return"b-cv";if(d.startsWith("DS"))return"b-ds";
+  if(d.startsWith("SE"))return"b-se";if(d.startsWith("AL"))return"b-al";
+  if(d.startsWith("ET"))return"b-et";return"b-cs";
+}
+function card(s,b,i){
+  return`<div class="sess-card" style="animation-delay:${i*0.04}s;border-left-color:${BC[b]||'#6366f1'}">
+    <div class="s-top"><span class="s-sub">${s.sub}</span><span class="s-room">${s.room}</span></div>
+    <div class="s-meta"><span class="badge ${divBadgeClass(s.div)}">${s.div}</span>
+    <span class="badge ${s.type==='lab'?'b-lab':'b-thy'}">${s.type==='lab'?'LAB':'THEORY'}</span>
+    👤 ${s.fac}</div>
+  </div>`;
+}
+function renderSess(){
+  if(activeTab !== 'timetable') return;
+  updCounts();
+  const list=document.getElementById("sessList"),stats=document.getElementById("statsRow");
+  if(curView==="all"){
+    const all=getSess(null);
+    document.getElementById("sbTitle").textContent=`All Rooms — ${curDay} ${getSlot()}`+(myDiv!=="ALL"?` · ${myDiv}`:"");
+    if(!all.length){list.innerHTML=`<div class="empty"><div class="empty-ico">📭</div><div class="empty-txt">No sessions at this time<br><small>Try a different slot or day</small></div></div>`;stats.style.display="none";return;}
+    stats.style.display="flex";
+    document.getElementById("sN").textContent=all.length;
+    document.getElementById("sD").textContent=[...new Set(all.map(s=>s.div))].length;
+    document.getElementById("sF").textContent=[...new Set(all.map(s=>s.fac))].length;
+    const byB={};all.forEach(s=>{(byB[s.bldg]=byB[s.bldg]||[]).push(s);});
+    list.innerHTML=Object.keys(byB).map(b=>`<div class="sec-lbl" style="color:${BC[b]||'#6366f1'}">${BN[b]||b}</div>${byB[b].map((s,i)=>card(s,b,i)).join("")}`).join("");
+    return;
+  }
+  if(!curBldg){
+    list.innerHTML=`<div class="empty"><div class="empty-ico">🏫</div><div class="empty-txt">Click a building on the map<br>to see sessions for<br><strong>${curDay}</strong> at <strong>${getSlot()}</strong></div></div>`;
+    stats.style.display="none";return;
+  }
+  const sess=getSess(curBldg);
+  document.getElementById("sbTitle").innerHTML=`<span style="color:${BC[curBldg]}">${BN[curBldg]}</span> · ${curDay} ${getSlot()}`+(myDiv!=="ALL"?` · <span style="color:var(--accent)">${myDiv}</span>`:"");
+  if(!sess.length){
+    list.innerHTML=`<div class="empty"><div class="empty-ico">📭</div><div class="empty-txt">No sessions here${myDiv!=="ALL"?" for "+myDiv:""}<br><small>Try another slot or division</small></div></div>`;
+    stats.style.display="none";return;
+  }
+  stats.style.display="flex";
+  document.getElementById("sN").textContent=sess.length;
+  document.getElementById("sD").textContent=[...new Set(sess.map(s=>s.div))].length;
+  document.getElementById("sF").textContent=[...new Set(sess.map(s=>s.fac))].length;
+  list.innerHTML=sess.map((s,i)=>card(s,curBldg,i)).join("");
+}
+
+function setView(v){
+  curView=v;
+  document.getElementById("btnMap").classList.toggle("on",v==="map");
+  document.getElementById("btnAll").classList.toggle("on",v==="all");
+  if(v==="map"){curBldg=null;resetHLTT();}
+  renderSess();
+}
+
+function toggleFacTT(){
+  showFacTT=!showFacTT;
+  document.getElementById("facL").style.display=showFacTT?"":"none";
+  const b=document.getElementById("btnFacTT");
+  b.classList.toggle("on",showFacTT);b.textContent=showFacTT?"🏢 Hide Facilities":"🏢 Facilities";
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NAVIGATION GRAPH & ALGORITHMS
+// ═══════════════════════════════════════════════════════════
+const NODES = {
+  "ENT_MAIN":   {id:"ENT_MAIN",  name:"Main Entrance",       x:487,y:540,type:"junction",wing:"campus"},
+  "ENT_GATE":   {id:"ENT_GATE",  name:"Campus Gate",         x:487,y:510,type:"junction",wing:"campus"},
+  "JCT_CENTER": {id:"JCT_CENTER",name:"Central Corridor",    x:487,y:430,type:"junction",wing:"campus"},
+  "JCT_NORTH":  {id:"JCT_NORTH", name:"North Corridor",      x:487,y:150,type:"junction",wing:"campus"},
+  "JCT_WEST":   {id:"JCT_WEST",  name:"West Junction",       x:243,y:350,type:"junction",wing:"campus"},
+  "JCT_EAST":   {id:"JCT_EAST",  name:"East Junction",       x:720,y:210,type:"junction",wing:"campus"},
+  "JCT_IC":     {id:"JCT_IC",    name:"IC Block Junction",   x:649,y:318,type:"junction",wing:"campus"},
+  "CANTEEN":    {id:"CANTEEN",   name:"Canteen / Open Area", x:442,y:430,type:"facility", wing:"campus"},
+  "PARKING":    {id:"PARKING",   name:"Parking Area",        x:614,y:430,type:"facility", wing:"campus"},
+  "SPORTS":     {id:"SPORTS",    name:"Sports Ground",       x:111,y:252,type:"facility", wing:"campus"},
+  "H_ENTRY":    {id:"H_ENTRY",   name:"H Wing Entry",        x:415,y:118,type:"entry",   wing:"H"},
+  "H_EAST":     {id:"H_EAST",    name:"H Wing East Gate",    x:660,y:73, type:"entry",   wing:"H"},
+  "H_WEST":     {id:"H_WEST",    name:"H Wing West Gate",    x:180,y:73, type:"entry",   wing:"H"},
+  "H001":       {id:"H001",      name:"H001 (Lab)",          x:200,y:73, type:"room",    wing:"H"},
+  "H008":       {id:"H008",      name:"H008 (EDS Lab)",      x:290,y:73, type:"room",    wing:"H"},
+  "H009":       {id:"H009",      name:"H009 (DT Lab)",       x:340,y:73, type:"room",    wing:"H"},
+  "H101":       {id:"H101",      name:"H101 (Lab)",          x:420,y:73, type:"room",    wing:"H"},
+  "H102":       {id:"H102",      name:"H102 (Lab)",          x:470,y:73, type:"room",    wing:"H"},
+  "H106":       {id:"H106",      name:"H106 (Lab)",          x:530,y:73, type:"room",    wing:"H"},
+  "H311":       {id:"H311",      name:"H311 (Lecture Hall)", x:620,y:73, type:"room",    wing:"H"},
+  "A_ENTRY":    {id:"A_ENTRY",   name:"A Wing Entry",        x:482,y:148,type:"entry",   wing:"A"},
+  "A_SOUTH":    {id:"A_SOUTH",   name:"A Wing South Exit",   x:482,y:366,type:"entry",   wing:"A"},
+  "A005":       {id:"A005",      name:"A005 (SON Lab)",      x:380,y:200,type:"room",    wing:"A"},
+  "A006":       {id:"A006",      name:"A006 (Lab)",          x:420,y:200,type:"room",    wing:"A"},
+  "A106":       {id:"A106",      name:"A106 (AM Lab)",       x:380,y:260,type:"room",    wing:"A"},
+  "A207A":      {id:"A207A",     name:"A207A (EDS Lab)",     x:420,y:320,type:"room",    wing:"A"},
+  "A207B":      {id:"A207B",     name:"A207B (DV Lab)",      x:460,y:320,type:"room",    wing:"A"},
+  "A207C":      {id:"A207C",     name:"A207C (Lab)",         x:500,y:320,type:"room",    wing:"A"},
+  "A207D":      {id:"A207D",     name:"A207D (Lab)",         x:540,y:320,type:"room",    wing:"A"},
+  "D_ENTRY":    {id:"D_ENTRY",   name:"D Block Entry",       x:720,y:210,type:"entry",   wing:"D"},
+  "D_NORTH":    {id:"D_NORTH",   name:"D Block North",       x:781,y:36, type:"entry",   wing:"D"},
+  "D010":       {id:"D010",      name:"D010 (Lecture)",      x:760,y:100,type:"room",    wing:"D"},
+  "D011":       {id:"D011",      name:"D011 (Lecture Hall)", x:760,y:130,type:"room",    wing:"D"},
+  "D108":       {id:"D108",      name:"D108 (Tutorial)",     x:760,y:170,type:"room",    wing:"D"},
+  "D109":       {id:"D109",      name:"D109 (Lecture Hall)", x:760,y:200,type:"room",    wing:"D"},
+  "D202":       {id:"D202",      name:"D202 (Room)",         x:760,y:230,type:"room",    wing:"D"},
+  "D203":       {id:"D203",      name:"D203 (Lecture Hall)", x:760,y:260,type:"room",    wing:"D"},
+  "D309":       {id:"D309",      name:"D309 (Room)",         x:760,y:300,type:"room",    wing:"D"},
+  "D310":       {id:"D310",      name:"D310 (Room)",         x:760,y:330,type:"room",    wing:"D"},
+  "E_ENTRY":    {id:"E_ENTRY",   name:"E Wing Entry",        x:243,y:152,type:"entry",   wing:"E"},
+  "E_SOUTH":    {id:"E_SOUTH",   name:"E Wing South",        x:243,y:344,type:"entry",   wing:"E"},
+  "E210":       {id:"E210",      name:"E210 (Lab)",          x:200,y:250,type:"room",    wing:"E"},
+  "IC2":        {id:"IC2",       name:"IC2 (Innovation Lab)",x:630,y:200,type:"room",    wing:"IC"},
+  "IC3":        {id:"IC3",       name:"IC3 (Lab)",           x:660,y:250,type:"room",    wing:"IC"},
+  "HBM_ENTRY":  {id:"HBM_ENTRY", name:"HBM Block Entry",    x:239,y:362,type:"entry",   wing:"HBM"},
+  "HBM01":      {id:"HBM01",     name:"HBM01 (Seminar Hall)",x:180,y:405,type:"room",   wing:"HBM"},
+  "HBM13":      {id:"HBM13",     name:"HBM13 (Room)",        x:300,y:405,type:"room",   wing:"HBM"},
+};
+
+const EDGES=[
+  {from:"ENT_MAIN",  to:"ENT_GATE",  w:30},{from:"ENT_GATE",  to:"JCT_CENTER",w:80},
+  {from:"JCT_CENTER",to:"CANTEEN",   w:20},{from:"JCT_CENTER",to:"PARKING",   w:60},
+  {from:"JCT_CENTER",to:"A_SOUTH",   w:50},{from:"JCT_CENTER",to:"JCT_WEST",  w:120},
+  {from:"JCT_CENTER",to:"JCT_EAST",  w:120},
+  {from:"A_SOUTH",   to:"A_ENTRY",   w:70},{from:"A_ENTRY",   to:"JCT_NORTH", w:20},
+  {from:"JCT_NORTH", to:"H_ENTRY",   w:32},{from:"JCT_NORTH", to:"E_ENTRY",   w:120},
+  {from:"JCT_NORTH", to:"D_ENTRY",   w:120},
+  {from:"H_ENTRY",   to:"H_WEST",    w:100},{from:"H_ENTRY",  to:"H_EAST",    w:120},
+  {from:"H_WEST",    to:"H001",      w:20},{from:"H_WEST",    to:"H008",      w:60},
+  {from:"H_WEST",    to:"H009",      w:80},{from:"H_ENTRY",   to:"H101",      w:10},
+  {from:"H_ENTRY",   to:"H102",      w:30},{from:"H_EAST",    to:"H106",      w:30},
+  {from:"H_EAST",    to:"H311",      w:20},{from:"H008",      to:"H009",      w:30},
+  {from:"H009",      to:"H101",      w:40},{from:"H101",      to:"H102",      w:20},
+  {from:"H102",      to:"H106",      w:40},{from:"H106",      to:"H311",      w:60},
+  {from:"A_ENTRY",   to:"A005",      w:40},{from:"A_ENTRY",   to:"A006",      w:30},
+  {from:"A005",      to:"A006",      w:20},{from:"A005",      to:"A106",      w:50},
+  {from:"A106",      to:"A207A",     w:50},{from:"A207A",     to:"A207B",     w:20},
+  {from:"A207B",     to:"A207C",     w:20},{from:"A207C",     to:"A207D",     w:20},
+  {from:"A207A",     to:"A_SOUTH",   w:40},
+  {from:"D_ENTRY",   to:"D_NORTH",   w:180},{from:"D_NORTH",  to:"D010",      w:50},
+  {from:"D010",      to:"D011",      w:20},{from:"D011",      to:"D108",      w:30},
+  {from:"D108",      to:"D109",      w:20},{from:"D109",      to:"D202",      w:30},
+  {from:"D202",      to:"D203",      w:20},{from:"D203",      to:"D309",      w:40},
+  {from:"D309",      to:"D310",      w:20},{from:"D310",      to:"D_ENTRY",   w:60},
+  {from:"D_ENTRY",   to:"JCT_EAST",  w:10},
+  {from:"E_ENTRY",   to:"E210",      w:60},{from:"E210",      to:"E_SOUTH",   w:60},
+  {from:"E_SOUTH",   to:"HBM_ENTRY", w:20},{from:"E_SOUTH",   to:"JCT_WEST",  w:20},
+  {from:"JCT_WEST",  to:"SPORTS",    w:80},{from:"JCT_WEST",  to:"HBM_ENTRY", w:30},
+  {from:"HBM_ENTRY", to:"HBM01",     w:40},{from:"HBM01",     to:"HBM13",     w:60},
+  {from:"HBM13",     to:"HBM_ENTRY", w:40},
+  {from:"JCT_IC",    to:"IC2",       w:50},{from:"JCT_IC",    to:"IC3",       w:60},
+  {from:"JCT_IC",    to:"JCT_EAST",  w:70},{from:"JCT_IC",    to:"A_SOUTH",   w:80},
+  {from:"IC2",       to:"IC3",       w:30},
+  {from:"JCT_EAST",  to:"D_ENTRY",   w:10},{from:"JCT_EAST",  to:"JCT_NORTH", w:120},
+  {from:"E_ENTRY",   to:"JCT_NORTH", w:130},{from:"H_WEST",   to:"E_ENTRY",   w:50},
+];
+
+function buildGraph(){
+  const g={};
+  Object.keys(NODES).forEach(id=>{g[id]=[];});
+  EDGES.forEach(e=>{g[e.from].push({node:e.to,w:e.w});g[e.to].push({node:e.from,w:e.w});});
+  return g;
+}
+const GRAPH=buildGraph();
+
+function heuristic(a,b){
+  const na=NODES[a],nb=NODES[b];
+  if(!na||!nb)return 0;
+  const dx=na.x-nb.x,dy=na.y-nb.y;
+  return Math.sqrt(dx*dx+dy*dy)*0.55;
+}
+
+function astar(start,goal){
+  const trace=[`[A*] Init: start=${start}, goal=${goal}`];
+  const openSet=new Set([start]),cameFrom={},gScore={},fScore={},visitedOrder=[];
+  Object.keys(NODES).forEach(n=>{gScore[n]=Infinity;fScore[n]=Infinity;});
+  gScore[start]=0;fScore[start]=heuristic(start,goal);
+  let iterations=0;
+  while(openSet.size>0){
+    iterations++;
+    let current=null,lowestF=Infinity;
+    openSet.forEach(n=>{if(fScore[n]<lowestF){lowestF=fScore[n];current=n;}});
+    if(current===goal){
+      trace.push(`[A*] Found goal after ${iterations} iterations`);
+      const path=reconstructPath(cameFrom,current);
+      trace.push(`[A*] Path: ${path.join(' → ')}`);
+      trace.push(`[A*] Total cost: ${Math.round(gScore[goal])}m`);
+      return{path,cost:gScore[goal],visited:visitedOrder,trace};
+    }
+    openSet.delete(current);visitedOrder.push(current);
+    trace.push(`  Expanding: ${current} (g=${Math.round(gScore[current])}, f=${Math.round(fScore[current])})`);
+    (GRAPH[current]||[]).forEach(({node:neighbor,w})=>{
+      const tentativeG=gScore[current]+w;
+      if(tentativeG<gScore[neighbor]){
+        cameFrom[neighbor]=current;gScore[neighbor]=tentativeG;
+        fScore[neighbor]=tentativeG+heuristic(neighbor,goal);
+        openSet.add(neighbor);
+        trace.push(`    → ${neighbor}: g=${Math.round(tentativeG)}, h=${Math.round(heuristic(neighbor,goal))}, f=${Math.round(fScore[neighbor])}`);
+      }
+    });
+  }
+  trace.push(`[A*] No path found`);
+  return{path:[],cost:Infinity,visited:visitedOrder,trace};
+}
+
+function dijkstra(start,goal){
+  const trace=[`[Dijkstra] Init: start=${start}, goal=${goal}`];
+  const dist={},cameFrom={},visited=new Set(),visitedOrder=[];
+  Object.keys(NODES).forEach(n=>{dist[n]=Infinity;});
+  dist[start]=0;
+  const queue=[{node:start,d:0}];
+  let iterations=0;
+  while(queue.length>0){
+    queue.sort((a,b)=>a.d-b.d);
+    const{node:u}=queue.shift();
+    if(visited.has(u))continue;
+    visited.add(u);visitedOrder.push(u);iterations++;
+    trace.push(`  Visiting: ${u} (dist=${Math.round(dist[u])})`);
+    if(u===goal){
+      trace.push(`[Dijkstra] Found goal after ${iterations} iterations`);
+      const path=reconstructPath(cameFrom,goal);
+      trace.push(`[Dijkstra] Path: ${path.join(' → ')}`);
+      trace.push(`[Dijkstra] Total cost: ${Math.round(dist[goal])}m`);
+      return{path,cost:dist[goal],visited:visitedOrder,trace};
+    }
+    (GRAPH[u]||[]).forEach(({node:v,w})=>{
+      if(!visited.has(v)){
+        const alt=dist[u]+w;
+        if(alt<dist[v]){dist[v]=alt;cameFrom[v]=u;queue.push({node:v,d:alt});trace.push(`    Relax: ${v} → ${Math.round(alt)}m`);}
+      }
+    });
+  }
+  trace.push(`[Dijkstra] No path found`);
+  return{path:[],cost:Infinity,visited:visitedOrder,trace};
+}
+
+function reconstructPath(cameFrom,current){
+  const path=[current];
+  while(cameFrom[current]){current=cameFrom[current];path.unshift(current);}
+  return path;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NAVIGATION UI STATE
+// ═══════════════════════════════════════════════════════════
+let curAlgo='astar',curMode='navigate',selFrom='',selTo='',showFacNav=false;
+let mapClickStep=0;
+const WING_ENTRIES={H:"H_ENTRY",A:"A_ENTRY",D:"D_ENTRY",E:"E_ENTRY",HBM:"HBM_ENTRY"};
+const BLDG_ROOMS={H:"H001, H008, H009, H101, H102, H106, H311",A:"A005, A006, A106, A207A–D",D:"D010, D011, D108, D109, D202, D203, D309, D310",E:"E210, IC2, IC3",HBM:"HBM01–HBM13"};
+
+function populateSelects(){
+  const groups={
+    "🏁 Entrances & Junctions": Object.values(NODES).filter(n=>n.type==="junction"||n.type==="entry"),
+    "🏫 H Wing — Labs & Halls": Object.values(NODES).filter(n=>n.wing==="H"),
+    "🏢 A Wing — Central Block": Object.values(NODES).filter(n=>n.wing==="A"),
+    "🟣 D Block — East Side":   Object.values(NODES).filter(n=>n.wing==="D"),
+    "🟢 E Wing — Back West":    Object.values(NODES).filter(n=>n.wing==="E"),
+    "🟡 HBM Block":             Object.values(NODES).filter(n=>n.wing==="HBM"),
+    "💡 IC Block":              Object.values(NODES).filter(n=>n.wing==="IC"),
+    "🍽 Facilities":            Object.values(NODES).filter(n=>n.type==="facility"),
+  };
+  ["selFrom","selTo"].forEach(sid=>{
+    const sel=document.getElementById(sid);
+    sel.innerHTML=`<option value="">— Select location —</option>`;
+    Object.entries(groups).forEach(([grpName,nodes])=>{
+      if(!nodes.length)return;
+      const og=document.createElement("optgroup");og.label=grpName;
+      nodes.forEach(n=>{const opt=document.createElement("option");opt.value=n.id;opt.textContent=n.name;og.appendChild(opt);});
+      sel.appendChild(og);
+    });
+  });
+}
+
+function setAlgo(algo){
+  curAlgo=algo;
+  document.getElementById("togAstar").className="algo-toggle"+(algo==='astar'?' active-astar':'');
+  document.getElementById("togDijkstra").className="algo-toggle"+(algo==='dijkstra'?' active-dijkstra':'');
+  const badge=document.getElementById("topAlgoBadge");
+  if(algo==='astar'){badge.className="algo-badge active-astar";badge.textContent="⚡ A* ACTIVE";}
+  else{badge.className="algo-badge active-dijkstra";badge.textContent="🔍 DIJKSTRA ACTIVE";}
+  if(selFrom&&selTo)findPath();
+}
+
+function setMode(mode){
+  curMode=mode;
+  document.getElementById("btnNavMode").classList.toggle("on",mode==="navigate");
+  document.getElementById("btnExplore").classList.toggle("on",mode==="explore");
+  const hint=document.getElementById("modeHint");
+  if(mode==="navigate"){hint.textContent="Click a building to set as FROM";hint.classList.add("show");setTimeout(()=>hint.classList.remove("show"),2500);mapClickStep=0;}
+  else hint.classList.remove("show");
+}
+
+function toggleFacNav(){
+  showFacNav=!showFacNav;
+  document.getElementById("facL").style.display=showFacNav?"":"none";
+  const b=document.getElementById("btnFacNav");
+  b.classList.toggle("on",showFacNav);b.textContent=showFacNav?"🏢 Hide Facilities":"🏢 Facilities";
+}
+
+function onSelectChange(){
+  selFrom=document.getElementById("selFrom").value;
+  selTo=document.getElementById("selTo").value;
+}
+
+function swapLocations(){
+  const f=document.getElementById("selFrom").value,t=document.getElementById("selTo").value;
+  document.getElementById("selFrom").value=t;document.getElementById("selTo").value=f;
+  selFrom=t;selTo=f;
+}
+
+function findPath(){
+  selFrom=document.getElementById("selFrom").value;
+  selTo=document.getElementById("selTo").value;
+  if(!selFrom||!selTo){showResult('<div class="empty-nav"><div class="empty-ico">⚠️</div><div class="empty-txt">Please select both<br><strong>FROM</strong> and <strong>TO</strong> locations</div></div>');return;}
+  if(selFrom===selTo){showResult('<div class="empty-nav"><div class="empty-ico">📍</div><div class="empty-txt">You are already<br>at this location!</div></div>');return;}
+  const t0=performance.now();
+  const result=curAlgo==='astar'?astar(selFrom,selTo):dijkstra(selFrom,selTo);
+  const elapsed=(performance.now()-t0).toFixed(2);
+  if(!result.path.length){showResult('<div class="empty-nav"><div class="empty-ico">🚫</div><div class="empty-txt">No path found<br>between these locations</div></div>');return;}
+  renderPath(result.path);
+  renderVisited(result.visited,result.path);
+  renderNavResult(result,elapsed);
+}
+
+function clearPath(){
+  document.getElementById("selFrom").value="";document.getElementById("selTo").value="";
+  selFrom="";selTo="";mapClickStep=0;
+  document.getElementById("pathLayer").innerHTML="";
+  document.getElementById("pathVisited").innerHTML="";
+  document.getElementById("nodesLayer").innerHTML="";
+  ["A","D","H","E","HBM"].forEach(w=>{const el=document.getElementById("b"+w);if(el)el.classList.remove("sel","dim");});
+  showResult('<div class="empty-nav"><div class="empty-ico">🗺️</div><div class="empty-txt">Select two locations<br>and press <strong>Find Route</strong><br><small>or click buildings on the map</small></div></div>');
+}
+
+// ── SHARED BUILDING CLICK HANDLER ──
+function onBldgClick(wing){
+  if(activeTab==='timetable'){
+    clickBldgTT(wing);
+  } else {
+    clickBldgNav(wing);
+  }
+}
+
+function clickBldgTT(b){
+  if(!BC[b])return;
+  if(curBldg===b){curBldg=null;resetHLTT();renderSess();return;}
+  curBldg=b;
+  ["A","D","H","E","HBM"].forEach(x=>{
+    const el=document.getElementById("b"+x);if(!el)return;
+    el.classList.remove("sel","dim");el.classList.add(x===b?"sel":"dim");
+  });
+  renderSess();
+}
+function resetHLTT(){
+  ["A","D","H","E","HBM"].forEach(x=>{const el=document.getElementById("b"+x);if(el){el.classList.remove("sel","dim");}});
+}
+
+function clickBldgNav(wing){
+  if(curMode!=='navigate')return;
+  const nodeId=WING_ENTRIES[wing];if(!nodeId)return;
+  if(mapClickStep===0){
+    selFrom=nodeId;document.getElementById("selFrom").value=nodeId;mapClickStep=1;
+    const hint=document.getElementById("modeHint");
+    hint.textContent=`FROM: ${NODES[nodeId].name} — now click destination`;
+    hint.classList.add("show");
+    highlightBuildingNav(wing,'from');
+  } else {
+    selTo=nodeId;document.getElementById("selTo").value=nodeId;mapClickStep=0;
+    document.getElementById("modeHint").classList.remove("show");findPath();
+  }
+}
+
+function highlightBuildingNav(wing,role){
+  ["A","D","H","E","HBM"].forEach(w=>{const el=document.getElementById("b"+w);if(!el)return;el.classList.remove("sel","dim");if(w===wing)el.classList.add("sel");});
+}
+
+// ── TOOLTIP ──
+let tipOn=false;
+function tip(e,b){
+  const t=document.getElementById("maptip");
+  if(activeTab==='timetable'){
+    if(!BC[b])return;
+    const cnt=getSess(b).length;
+    t.innerHTML=`<div class="tt-title" style="color:${BC[b]}">${BN[b]}</div><div class="tt-sub">${BR[b]} &nbsp;·&nbsp; ${BF[b]}</div><div class="tt-cnt" style="color:${BC[b]}">${cnt} session${cnt!==1?"s":""} · ${curDay} ${getSlot()}</div>`;
+  } else {
+    t.innerHTML=`<div class="tt-title" style="color:${BC[b]||'#6366f1'}">${BN[b]||b}</div><div class="tt-sub">${BR[b]||''}</div><div class="tt-cnt" style="color:${BC[b]||'#6366f1'}">Rooms: ${BLDG_ROOMS[b]||''}</div><div class="tt-cnt" style="color:var(--muted);font-weight:500;margin-top:3px;">Click to set as navigation point</div>`;
+  }
+  const wr=document.getElementById("mapWrap").getBoundingClientRect();
+  t.style.display="block";t.style.left=(e.clientX-wr.left+18)+"px";t.style.top=(e.clientY-wr.top-48)+"px";tipOn=true;
+}
+function untip(){document.getElementById("maptip").style.display="none";tipOn=false;}
+document.addEventListener("mousemove",e=>{
+  if(!tipOn)return;
+  const t=document.getElementById("maptip"),wr=document.getElementById("mapWrap").getBoundingClientRect();
+  t.style.left=(e.clientX-wr.left+18)+"px";t.style.top=(e.clientY-wr.top-48)+"px";
+});
+
+// ── PATH RENDERING ──
+function renderPath(path){
+  const layer=document.getElementById("pathLayer"),nodeLayer=document.getElementById("nodesLayer");
+  layer.innerHTML="";nodeLayer.innerHTML="";
+  if(path.length<2)return;
+  for(let i=0;i<path.length-1;i++){
+    const na=NODES[path[i]],nb=NODES[path[i+1]];if(!na||!nb)continue;
+    const delay=i*0.12,length=Math.hypot(nb.x-na.x,nb.y-na.y);
+    const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+    line.setAttribute("x1",na.x);line.setAttribute("y1",na.y);
+    line.setAttribute("x2",nb.x);line.setAttribute("y2",nb.y);
+    line.setAttribute("stroke","#f97316");line.setAttribute("stroke-width","4");
+    line.setAttribute("stroke-linecap","round");line.setAttribute("marker-end","url(#arrowPath)");
+    line.setAttribute("opacity","0.9");line.setAttribute("stroke-dasharray",length);line.setAttribute("stroke-dashoffset",length);
+    line.style.animation=`dashAnim 0.5s ease ${delay}s forwards`;
+    layer.appendChild(line);
+  }
+  path.forEach((nid,idx)=>{
+    const n=NODES[nid];if(!n)return;
+    const delay=idx*0.12+0.1,g=document.createElementNS("http://www.w3.org/2000/svg","g");
+    const circle=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    const isStart=idx===0,isEnd=idx===path.length-1;
+    circle.setAttribute("cx",n.x);circle.setAttribute("cy",n.y);
+    circle.setAttribute("r",isStart||isEnd?"10":"7");
+    circle.setAttribute("fill",isStart?"#10b981":isEnd?"#f97316":"#6366f1");
+    circle.setAttribute("stroke","#fff");circle.setAttribute("stroke-width","2.5");
+    circle.style.animation=`nodePop 0.4s ease ${delay}s both`;
+    g.appendChild(circle);
+    if(isStart||isEnd){
+      const label=document.createElementNS("http://www.w3.org/2000/svg","text");
+      label.setAttribute("x",n.x);label.setAttribute("y",n.y-16);label.setAttribute("text-anchor","middle");
+      label.setAttribute("font-family","JetBrains Mono");label.setAttribute("font-size","10");label.setAttribute("font-weight","700");
+      label.setAttribute("fill",isStart?"#059669":"#ea580c");label.textContent=isStart?"FROM":"DEST";
+      const bg=document.createElementNS("http://www.w3.org/2000/svg","rect");
+      const tw=36,th=14;bg.setAttribute("x",n.x-tw/2-2);bg.setAttribute("y",n.y-28);
+      bg.setAttribute("width",tw+4);bg.setAttribute("height",th);bg.setAttribute("rx","5");
+      bg.setAttribute("fill",isStart?"rgba(16,185,129,0.15)":"rgba(249,115,22,0.15)");
+      g.appendChild(bg);g.appendChild(label);
+    }
+    nodeLayer.appendChild(g);
+  });
+}
+
+function renderVisited(visited,path){
+  const layer=document.getElementById("pathVisited");layer.innerHTML="";
+  const pathSet=new Set(path);
+  visited.forEach((nid,idx)=>{
+    if(pathSet.has(nid))return;const n=NODES[nid];if(!n)return;
+    const circle=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    circle.setAttribute("cx",n.x);circle.setAttribute("cy",n.y);circle.setAttribute("r","4");
+    circle.setAttribute("fill",curAlgo==='astar'?"rgba(99,102,241,0.25)":"rgba(16,185,129,0.25)");
+    circle.setAttribute("stroke",curAlgo==='astar'?"rgba(99,102,241,0.5)":"rgba(16,185,129,0.5)");
+    circle.setAttribute("stroke-width","1.5");circle.style.animation=`nodePop 0.3s ease ${idx*0.06}s both`;
+    layer.appendChild(circle);
+  });
+}
+
+function renderNavResult(result,elapsed){
+  const{path,cost,visited,trace}=result;
+  const algoName=curAlgo==='astar'?'A* Search':"Dijkstra's";
+  const algoColor=curAlgo==='astar'?'#6366f1':'#10b981';
+  const walkMin=Math.round(cost/80);
+  let stepsHtml='';
+  path.forEach((nid,idx)=>{
+    const n=NODES[nid];if(!n)return;
+    const isFirst=idx===0,isLast=idx===path.length-1;
+    const dotColor=isFirst?'#10b981':isLast?'#f97316':'#6366f1';
+    let edgeW=0;
+    if(idx<path.length-1){const next=path[idx+1];const edge=EDGES.find(e=>(e.from===nid&&e.to===next)||(e.from===next&&e.to===nid));if(edge)edgeW=edge.w;}
+    const dir=getDirection(path,idx);
+    stepsHtml+=`<div class="step-item">
+      <div class="step-line"><div class="step-dot" style="background:${dotColor};box-shadow:0 0 0 2px ${dotColor}33"></div>${!isLast?`<div class="step-connector"></div>`:''}</div>
+      <div class="step-content"><div class="step-name">${n.name}</div><div class="step-meta">${n.wing!=='campus'?`${n.wing} Wing`:'Campus Path'} · ${n.type}</div>${dir?`<span class="turn-dir">${dir}</span>`:''}${edgeW>0?`<div class="step-dist">↓ ${edgeW}m ahead</div>`:''}</div>
+    </div>`;
+  });
+  const traceHtml=trace.map(line=>{
+    const cls=line.includes('Found')||line.includes('Path:')?'final':line.includes('Init')?'highlight':'';
+    return`<div class="trace-line ${cls}">${line}</div>`;
+  }).join('');
+  showResult(`
+    <div class="path-header">
+      <div class="path-title" style="color:${algoColor}">📍 Route Found — ${algoName}</div>
+      <div class="path-stats">
+        <div class="ps"><div class="ps-val" style="color:${algoColor}">${Math.round(cost)}m</div><div class="ps-lbl">Distance</div></div>
+        <div class="ps"><div class="ps-val" style="color:#f97316">${walkMin<1?'<1':walkMin}</div><div class="ps-lbl">Min Walk</div></div>
+        <div class="ps"><div class="ps-val" style="color:#10b981">${path.length}</div><div class="ps-lbl">Waypoints</div></div>
+        <div class="ps"><div class="ps-val" style="color:#8b5cf6">${visited.length}</div><div class="ps-lbl">Explored</div></div>
+      </div>
+    </div>
+    <div class="path-steps">${stepsHtml}</div>
+    <div class="algo-trace">
+      <div class="trace-title">🔬 Algorithm Trace <span style="font-size:9px;font-weight:500;color:var(--muted)">${elapsed}ms · ${algoName}</span></div>
+      <div class="trace-body">${traceHtml}</div>
+    </div>`);
+}
+
+function getDirection(path,idx){
+  if(idx===0)return'🟢 Start here';if(idx===path.length-1)return'🏁 You have arrived!';
+  const prev=NODES[path[idx-1]],cur=NODES[path[idx]],next=NODES[path[idx+1]];
+  if(!prev||!cur||!next)return null;
+  const dx1=cur.x-prev.x,dy1=cur.y-prev.y,dx2=next.x-cur.x,dy2=next.y-cur.y;
+  const cross=dx1*dy2-dy1*dx2;
+  if(Math.abs(cross)<50)return'↑ Continue straight';
+  return cross>0?'↪ Turn right':'↩ Turn left';
+}
+
+function showResult(html){document.getElementById("resultPanel").innerHTML=html;}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+// auto-set day to today
+const todayMap={0:"MON",1:"TUE",2:"WED",3:"THU",4:"FRI",5:"SAT"};
+const todayIdx=new Date().getDay();
+if(todayMap[todayIdx]){
+  curDay=todayMap[todayIdx]||"MON";
+  document.querySelectorAll(".day-pill").forEach(p=>{p.classList.toggle("active",p.dataset.day===curDay);});
+}
+
+initSlots();
+populateSelects();
+updCounts();
+renderSess();
+</script>
+</body>
+</html>

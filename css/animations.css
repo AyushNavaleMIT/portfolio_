@@ -1,0 +1,48 @@
+/* Motion is only hidden when JS is running, so the page stays readable without it. */
+@keyframes marquee{to{transform:translateX(-50%)}}
+@keyframes scan{0%{transform:translateY(-160px)}100%{transform:translateY(110vh)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes spin-r{to{transform:rotate(-360deg)}}
+@keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+@keyframes pulse-line{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes slide-bar{0%,100%{translate:0}50%{translate:26px}}
+
+.marquee-track{animation:marquee 32s linear infinite}
+.marquee:hover .marquee-track{animation-play-state:paused}
+.scan{animation:scan 7s linear infinite}
+.geo-a{animation:spin 90s linear infinite}
+.geo-a polygon:nth-child(2){transform-origin:200px 200px;animation:spin-r 60s linear infinite}
+.geo-b{animation:drift 7s ease-in-out infinite}
+.bar-1{animation:slide-bar 5s ease-in-out infinite}.bar-2{animation:slide-bar 6s ease-in-out infinite reverse}
+.scroll-ind i{animation:pulse-line 2s ease-in-out infinite}
+
+/* Hero entrance */
+.js [data-hero]{opacity:0;translate:0 24px;transition:opacity .8s cubic-bezier(.2,.7,.2,1),translate .8s cubic-bezier(.2,.7,.2,1);transition-delay:calc(var(--d,0) * 110ms)}
+.js .hero-title .line{opacity:1;translate:0 0}
+.js .hero-title .line>span{translate:0 110%;transition:translate .9s cubic-bezier(.2,.8,.2,1);transition-delay:calc(var(--d,1) * 120ms)}
+.js .hero-ready [data-hero]{opacity:1;translate:0 0}
+.js .hero-ready .hero-title .line>span{translate:0 0}
+
+/* Scroll reveals */
+.js [data-reveal]{opacity:0;translate:0 32px;transition:opacity .7s ease,translate .7s cubic-bezier(.2,.7,.2,1)}
+.js [data-reveal].in{opacity:1;translate:0 0}
+.js [data-stagger]>*{opacity:0;translate:0 36px;transition:opacity .7s ease,translate .7s cubic-bezier(.2,.7,.2,1),transform .35s cubic-bezier(.2,.7,.2,1);transition-delay:calc(var(--i,0) * 90ms),calc(var(--i,0) * 90ms),0s}
+.js [data-stagger].in>*{opacity:1;translate:0 0}
+.js [data-stagger]>.card:hover{transition-delay:0s}
+
+/* Heading split reveal */
+.w{display:inline-block;overflow:hidden;vertical-align:top;padding-right:.12em;margin-right:-.12em}
+.w>i{display:inline-block;font-style:inherit}
+.js [data-split] .w>i{translate:0 105%;transition:translate .8s cubic-bezier(.2,.8,.2,1);transition-delay:calc(var(--wi,0) * 70ms)}
+.js [data-split].in .w>i{translate:0 0}
+
+/* Footer reveal */
+.js .foot-brand{-webkit-text-stroke-color:rgba(255,46,99,0);transition:opacity .9s,translate .9s,-webkit-text-stroke-color 1.4s .3s}
+.js .foot-brand.in{-webkit-text-stroke-color:rgba(255,46,99,.7)}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition-duration:.01ms!important;transition-delay:0s!important}
+  .js [data-hero],.js [data-reveal],.js [data-stagger]>*,.js [data-split] .w>i,.js .hero-title .line>span{opacity:1!important;translate:0 0!important}
+  .marquee-track{animation:none!important}
+}
